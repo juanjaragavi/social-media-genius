@@ -1,65 +1,110 @@
-import Image from "next/image";
+'use client';
+
+import { useState } from 'react';
+import Image from 'next/image';
+import { PostGenerator } from '@/components/post-generator';
+import { PostResult } from '@/components/post-result';
+import { GeneratedPostData } from '@/types/generated-post';
+import { Header } from '@/components/ui/header';
 
 export default function Home() {
+  const [generatedPost, setGeneratedPost] = useState<GeneratedPostData | null>(null);
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <>
+      <Header />
+      <div className="container mx-auto py-8 px-4">
+        <div className="max-w-5xl mx-auto">
+          {/* Main Generator Section */}
+          <section id="generador" className="scroll-mt-24">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Generator Column */}
+              <div>
+                <PostGenerator onPostGenerated={setGeneratedPost} />
+              </div>
+
+              {/* Result Column */}
+              <div>
+                {generatedPost ? (
+                  <PostResult result={generatedPost} />
+                ) : (
+                  <div className="bg-white rounded-lg border border-gray-200 shadow-sm min-h-150 flex items-center justify-center">
+                    <div className="text-center px-6 py-8 relative">
+                      {/* Watermark */}
+                      <div className="relative mb-6">
+                        <Image
+                          src="https://storage.googleapis.com/media-topfinanzas-com/favicon.png"
+                          alt="TopNetworks Watermark"
+                          width={150}
+                          height={150}
+                          className="opacity-20 grayscale select-none pointer-events-none mx-auto"
+                          draggable={false}
+                        />
+                        <div className="absolute inset-0 bg-linear-to-b from-transparent via-white/30 to-white/40 rounded-full"></div>
+                      </div>
+                      <p className="text-gray-400 text-lg font-medium mb-6">
+                        Tu publicación aparecerá aquí
+                      </p>
+                      <div className="grid grid-cols-2 gap-3 text-xs text-gray-500 max-w-sm mx-auto">
+                        <div className="p-3 bg-linear-to-br from-lime-50 to-cyan-50 rounded-lg border border-lime-100">
+                          <div className="font-semibold mb-1 text-lime-700">✅ Contenido</div>
+                          <div className="text-gray-600">Texto optimizado por plataforma</div>
+                        </div>
+                        <div className="p-3 bg-linear-to-br from-cyan-50 to-blue-50 rounded-lg border border-cyan-100">
+                          <div className="font-semibold mb-1 text-cyan-700">🏷️ Hashtags</div>
+                          <div className="text-gray-600">Etiquetas en tendencia</div>
+                        </div>
+                        <div className="p-3 bg-linear-to-br from-blue-50 to-lime-50 rounded-lg border border-blue-100">
+                          <div className="font-semibold mb-1 text-blue-700">🎨 Imágenes</div>
+                          <div className="text-gray-600">Visuales generados con IA</div>
+                        </div>
+                        <div className="p-3 bg-linear-to-br from-lime-50 to-cyan-50 rounded-lg border border-lime-100">
+                          <div className="font-semibold mb-1 text-lime-700">💰 Bajo Costo</div>
+                          <div className="text-gray-600">~$0.0002 por publicación</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </section>
+
+          {/* Features Section */}
+          <section className="mt-12 grid md:grid-cols-3 gap-6">
+            <div className="p-6 bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+              <div className="text-3xl mb-3">⚡</div>
+              <h3 className="font-semibold mb-2 text-gray-800">Súper Rápido</h3>
+              <p className="text-sm text-gray-600">
+                Genera contenido optimizado por plataforma en segundos con Gemini 2.5 Flash
+              </p>
+            </div>
+            <div className="p-6 bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+              <div className="text-3xl mb-3">🎯</div>
+              <h3 className="font-semibold mb-2 text-gray-800">Específico por Plataforma</h3>
+              <p className="text-sm text-gray-600">
+                Contenido personalizado para Instagram, Twitter, Facebook, TikTok y LinkedIn
+              </p>
+            </div>
+            <div className="p-6 bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+              <div className="text-3xl mb-3">🎨</div>
+              <h3 className="font-semibold mb-2 text-gray-800">Generación de Medios</h3>
+              <p className="text-sm text-gray-600">
+                Generación de imágenes con IA usando Imagen 4.0 Ultra
+              </p>
+            </div>
+          </section>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+      </div>
+
+      {/* Footer */}
+      <footer className="mt-16 border-t border-lime-200/30 bg-linear-to-r from-lime-50 via-cyan-50 to-blue-50">
+        <div className="container mx-auto px-4 py-6">
+          <div className="text-center text-sm text-gray-600">
+            <p>Impulsado por Google Vertex AI • Gemini 2.5 Flash • Imagen 4.0 Ultra • Veo 3.1</p>
+          </div>
         </div>
-      </main>
-    </div>
+      </footer>
+    </>
   );
 }
