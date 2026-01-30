@@ -1,7 +1,7 @@
 # Social Media Genius
 
 <p align="center">
-  <img src="https://storage.googleapis.com/media-topfinanzas-com/topnetworks-logo-name.webp" alt="TopNetworks Logo" width="200">
+  <img src="https://storage.googleapis.com/media-topfinanzas-com/favicon.png" alt="TopNetworks Logo" width="200">
 </p>
 
 **Social Media Genius** is an AI-powered content generation platform by [TopNetworks](https://topnetworks.com) that creates optimized social media posts for multiple platforms using Google Gemini 2.5 Flash and Imagen 4.0.
