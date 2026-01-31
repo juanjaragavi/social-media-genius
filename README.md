@@ -88,13 +88,13 @@ Open [http://localhost:3050](http://localhost:3050) to view the application.
 
 ## 📋 Platform Specifications (2026)
 
-| Platform  | Max Characters | Hashtag Limit | Image Aspect Ratio |
-|-----------|---------------|---------------|-------------------|
-| Instagram | 2,200         | 5             | 3:4 (portrait)    |
-| Twitter/X | 280 (25K Premium) | Unlimited  | 16:9              |
-| Facebook  | 63,206        | 30            | 16:9              |
-| TikTok    | 4,000         | Unlimited     | 9:16              |
-| LinkedIn  | 3,000         | 5             | 16:9              |
+| Platform  | Max Characters    | Hashtag Limit | Image Aspect Ratio |
+| --------- | ----------------- | ------------- | ------------------ |
+| Instagram | 2,200             | 5             | 3:4 (portrait)     |
+| Twitter/X | 280 (25K Premium) | Unlimited     | 16:9               |
+| Facebook  | 63,206            | 30            | 16:9               |
+| TikTok    | 4,000             | Unlimited     | 9:16               |
+| LinkedIn  | 3,000             | 5             | 16:9               |
 
 ## 🔗 Related Projects
 

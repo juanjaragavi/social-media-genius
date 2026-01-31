@@ -1,120 +1,138 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { getPlatformIconComponent } from '@/components/ui/platform-icons';
-import type { Platform, PostType, Tone, ContentLength, ImageStyle } from '@/types/social-platforms';
-import { GeneratedPostData } from '@/types/generated-post';
+import React, { useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { getPlatformIconComponent } from "@/components/ui/platform-icons";
+import type {
+  Platform,
+  PostType,
+  Tone,
+  ContentLength,
+  ImageStyle,
+} from "@/types/social-platforms";
+import { GeneratedPostData } from "@/types/generated-post";
 
 interface PostGeneratorProps {
   onPostGenerated: (post: GeneratedPostData) => void;
 }
 
 export function PostGenerator({ onPostGenerated }: PostGeneratorProps) {
-  const [platform, setPlatform] = useState<Platform>('instagram');
-  const [postType, setPostType] = useState<PostType>('promotional');
-  const [topic, setTopic] = useState('');
-  const [tone, setTone] = useState<Tone>('casual');
-  const [contentLength, setContentLength] = useState<ContentLength>('medium');
+  const [platform, setPlatform] = useState<Platform>("instagram");
+  const [postType, setPostType] = useState<PostType>("promotional");
+  const [topic, setTopic] = useState("");
+  const [tone, setTone] = useState<Tone>("casual");
+  const [contentLength, setContentLength] = useState<ContentLength>("medium");
   const [includeHashtags, setIncludeHashtags] = useState(true);
   const [includeImage, setIncludeImage] = useState(false);
-  const [imageStyle, setImageStyle] = useState<ImageStyle>('professional');
-  const [additionalInstructions, setAdditionalInstructions] = useState('');
+  const [imageStyle, setImageStyle] = useState<ImageStyle>("professional");
+  const [additionalInstructions, setAdditionalInstructions] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
-  const platforms: Platform[] = ['instagram', 'twitter', 'facebook', 'tiktok', 'linkedin'];
+  const platforms: Platform[] = [
+    "instagram",
+    "twitter",
+    "facebook",
+    "tiktok",
+    "linkedin",
+  ];
   const postTypes: PostType[] = [
-    'promotional',
-    'educational',
-    'entertaining',
-    'news',
-    'announcement',
-    'behind-the-scenes',
-    'user-generated',
-    'poll',
-    'question',
+    "promotional",
+    "educational",
+    "entertaining",
+    "news",
+    "announcement",
+    "behind-the-scenes",
+    "user-generated",
+    "poll",
+    "question",
   ];
   const tones: Tone[] = [
-    'casual',
-    'professional',
-    'friendly',
-    'urgent',
-    'inspiring',
-    'humorous',
-    'empathetic',
-    'authoritative',
+    "casual",
+    "professional",
+    "friendly",
+    "urgent",
+    "inspiring",
+    "humorous",
+    "empathetic",
+    "authoritative",
   ];
-  const contentLengths: ContentLength[] = ['short', 'medium', 'long'];
+  const contentLengths: ContentLength[] = ["short", "medium", "long"];
   const imageStyles: ImageStyle[] = [
-    'product-photo',
-    'lifestyle',
-    'infographic',
-    'illustration',
-    'minimalist',
-    'vibrant',
-    'professional',
-    'candid',
+    "product-photo",
+    "lifestyle",
+    "infographic",
+    "illustration",
+    "minimalist",
+    "vibrant",
+    "professional",
+    "candid",
   ];
 
   // Spanish translations for UI
   const postTypeLabels: Record<PostType, string> = {
-    promotional: 'Promocional',
-    educational: 'Educativo',
-    entertaining: 'Entretenido',
-    news: 'Noticias',
-    announcement: 'Anuncio',
-    'behind-the-scenes': 'Detrás de Cámaras',
-    'user-generated': 'Contenido de Usuario',
-    poll: 'Encuesta',
-    question: 'Pregunta',
+    promotional: "Promocional",
+    educational: "Educativo",
+    entertaining: "Entretenido",
+    news: "Noticias",
+    announcement: "Anuncio",
+    "behind-the-scenes": "Detrás de Cámaras",
+    "user-generated": "Contenido de Usuario",
+    poll: "Encuesta",
+    question: "Pregunta",
   };
 
   const toneLabels: Record<Tone, string> = {
-    casual: 'Casual',
-    professional: 'Profesional',
-    friendly: 'Amigable',
-    urgent: 'Urgente',
-    inspiring: 'Inspirador',
-    humorous: 'Humorístico',
-    empathetic: 'Empático',
-    authoritative: 'Con Autoridad',
+    casual: "Casual",
+    professional: "Profesional",
+    friendly: "Amigable",
+    urgent: "Urgente",
+    inspiring: "Inspirador",
+    humorous: "Humorístico",
+    empathetic: "Empático",
+    authoritative: "Con Autoridad",
   };
 
   const contentLengthLabels: Record<ContentLength, string> = {
-    short: 'Corto',
-    medium: 'Medio',
-    long: 'Largo',
+    short: "Corto",
+    medium: "Medio",
+    long: "Largo",
   };
 
   const imageStyleLabels: Record<ImageStyle, string> = {
-    'product-photo': 'Foto de Producto',
-    lifestyle: 'Estilo de Vida',
-    infographic: 'Infografía',
-    illustration: 'Ilustración',
-    minimalist: 'Minimalista',
-    vibrant: 'Vibrante',
-    professional: 'Profesional',
-    candid: 'Espontáneo',
+    "product-photo": "Foto de Producto",
+    lifestyle: "Estilo de Vida",
+    infographic: "Infografía",
+    illustration: "Ilustración",
+    minimalist: "Minimalista",
+    vibrant: "Vibrante",
+    professional: "Profesional",
+    candid: "Espontáneo",
   };
 
   const handleGenerate = async () => {
     if (!topic.trim()) {
-      setError('Por favor ingresa un tema');
+      setError("Por favor ingresa un tema");
       return;
     }
 
     setLoading(true);
-    setError('');
+    setError("");
 
     try {
-      const response = await fetch('/api/generate-post', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/generate-post", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           platform,
           postType,
@@ -131,12 +149,12 @@ export function PostGenerator({ onPostGenerated }: PostGeneratorProps) {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Error al generar la publicación');
+        throw new Error(data.error || "Error al generar la publicación");
       }
 
       onPostGenerated(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ocurrió un error');
+      setError(err instanceof Error ? err.message : "Ocurrió un error");
     } finally {
       setLoading(false);
     }
@@ -147,7 +165,8 @@ export function PostGenerator({ onPostGenerated }: PostGeneratorProps) {
       <CardHeader>
         <CardTitle>Generar Publicación para Redes Sociales</CardTitle>
         <CardDescription>
-          Crea contenido optimizado por plataforma con generación impulsada por IA
+          Crea contenido optimizado por plataforma con generación impulsada por
+          IA
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -161,14 +180,16 @@ export function PostGenerator({ onPostGenerated }: PostGeneratorProps) {
                 onClick={() => setPlatform(p)}
                 className={`p-3 rounded-lg border-2 transition-all flex flex-col items-center justify-center text-center ${
                   platform === p
-                    ? 'border-lime-500 bg-linear-to-br from-lime-50 to-cyan-50 shadow-sm'
-                    : 'border-gray-200 hover:border-lime-300 hover:bg-lime-50/50'
+                    ? "border-lime-500 bg-linear-to-br from-lime-50 to-cyan-50 shadow-sm"
+                    : "border-gray-200 hover:border-lime-300 hover:bg-lime-50/50"
                 }`}
               >
                 <div className="flex items-center justify-center mb-1.5">
                   {getPlatformIconComponent(p)}
                 </div>
-                <div className="text-xs font-medium capitalize text-gray-700">{p}</div>
+                <div className="text-xs font-medium capitalize text-gray-700">
+                  {p}
+                </div>
               </button>
             ))}
           </div>
@@ -229,8 +250,8 @@ export function PostGenerator({ onPostGenerated }: PostGeneratorProps) {
                 onClick={() => setContentLength(length)}
                 className={`p-2 rounded-md border-2 text-sm transition-all ${
                   contentLength === length
-                    ? 'border-lime-500 bg-linear-to-r from-lime-50 to-cyan-50 text-lime-700 font-medium'
-                    : 'border-gray-200 hover:border-lime-300 hover:bg-lime-50/50'
+                    ? "border-lime-500 bg-linear-to-r from-lime-50 to-cyan-50 text-lime-700 font-medium"
+                    : "border-gray-200 hover:border-lime-300 hover:bg-lime-50/50"
                 }`}
               >
                 {contentLengthLabels[length]}
@@ -249,7 +270,10 @@ export function PostGenerator({ onPostGenerated }: PostGeneratorProps) {
               onChange={(e) => setIncludeHashtags(e.target.checked)}
               className="h-4 w-4 text-lime-600 border-gray-300 rounded focus:ring-lime-500"
             />
-            <Label htmlFor="hashtags" className="text-sm font-medium text-gray-700 cursor-pointer">
+            <Label
+              htmlFor="hashtags"
+              className="text-sm font-medium text-gray-700 cursor-pointer"
+            >
               Incluir hashtags
             </Label>
           </div>
@@ -262,7 +286,10 @@ export function PostGenerator({ onPostGenerated }: PostGeneratorProps) {
               onChange={(e) => setIncludeImage(e.target.checked)}
               className="h-4 w-4 text-lime-600 border-gray-300 rounded focus:ring-lime-500"
             />
-            <Label htmlFor="image" className="text-sm font-medium text-gray-700 cursor-pointer">
+            <Label
+              htmlFor="image"
+              className="text-sm font-medium text-gray-700 cursor-pointer"
+            >
               Generar imagen con IA
             </Label>
           </div>
@@ -288,7 +315,9 @@ export function PostGenerator({ onPostGenerated }: PostGeneratorProps) {
 
         {/* Additional Instructions */}
         <div className="space-y-2">
-          <Label htmlFor="instructions">Instrucciones Adicionales (Opcional)</Label>
+          <Label htmlFor="instructions">
+            Instrucciones Adicionales (Opcional)
+          </Label>
           <Textarea
             id="instructions"
             placeholder="Cualquier requisito o guía específica..."

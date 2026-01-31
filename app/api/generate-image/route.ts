@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { ImagenService } from '@/lib/services/imagen-service';
+import { NextRequest, NextResponse } from "next/server";
+import { ImagenService } from "@/lib/services/imagen-service";
 
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
@@ -10,8 +10,8 @@ export async function POST(request: NextRequest) {
     // Validate required fields
     if (!body.prompt || !body.platform) {
       return NextResponse.json(
-        { error: 'Missing required fields: prompt, platform' },
-        { status: 400 }
+        { error: "Missing required fields: prompt, platform" },
+        { status: 400 },
       );
     }
 
@@ -24,14 +24,14 @@ export async function POST(request: NextRequest) {
       platform: body.platform,
       aspectRatio: body.aspectRatio,
       numberOfImages: body.numberOfImages || 1,
-      style: body.style || 'realistic',
+      style: body.style || "realistic",
       negativePrompt: body.negativePrompt,
     });
 
     if (!result.success) {
       return NextResponse.json(
-        { error: result.error || 'Image generation failed' },
-        { status: 500 }
+        { error: result.error || "Image generation failed" },
+        { status: 500 },
       );
     }
 
@@ -50,14 +50,14 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('❌ Image generation error:', error);
+    console.error("❌ Image generation error:", error);
 
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? error.message : "Unknown error",
         details: error instanceof Error ? error.stack : undefined,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -69,17 +69,17 @@ export async function GET() {
     const health = await imagenService.healthCheck();
 
     return NextResponse.json({
-      service: 'Imagen 4.0 Ultra',
+      service: "Imagen 4.0 Ultra",
       ...health,
     });
   } catch (error) {
     return NextResponse.json(
       {
-        service: 'Imagen 4.0 Ultra',
+        service: "Imagen 4.0 Ultra",
         configured: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

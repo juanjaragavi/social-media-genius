@@ -1,16 +1,16 @@
 /**
  * Database Service for Social Media Genius
- * 
+ *
  * Handles all database operations for storing and retrieving generated posts,
  * images, videos, and analytics.
  */
 
-import { Pool } from 'pg';
+import { Pool } from "pg";
 
 // Initialize PostgreSQL connection pool
 const pool = new Pool({
   host: process.env.DB_HOST,
-  port: parseInt(process.env.DB_PORT || '5432'),
+  port: parseInt(process.env.DB_PORT || "5432"),
   database: process.env.DB_NAME,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
@@ -91,7 +91,7 @@ export class DatabaseService {
       const result = await pool.query(query, values);
       return result.rows[0].id;
     } catch (error) {
-      console.error('Error saving post:', error);
+      console.error("Error saving post:", error);
       throw error;
     }
   }
@@ -128,7 +128,7 @@ export class DatabaseService {
       const result = await pool.query(query, values);
       return result.rows[0].id;
     } catch (error) {
-      console.error('Error saving image:', error);
+      console.error("Error saving image:", error);
       throw error;
     }
   }
@@ -144,7 +144,7 @@ export class DatabaseService {
     costUsd: number,
     success: boolean,
     errorMessage?: string,
-    metadata?: Record<string, unknown>
+    metadata?: Record<string, unknown>,
   ): Promise<void> {
     const query = `
       INSERT INTO usage_analytics (
@@ -167,7 +167,7 @@ export class DatabaseService {
     try {
       await pool.query(query, values);
     } catch (error) {
-      console.error('Error logging analytics:', error);
+      console.error("Error logging analytics:", error);
       // Don't throw - analytics failures shouldn't break the app
     }
   }
@@ -181,7 +181,7 @@ export class DatabaseService {
     `;
 
     const values: (string | number)[] = [];
-    
+
     if (platform) {
       query += ` WHERE platform = $1`;
       values.push(platform);
@@ -194,7 +194,7 @@ export class DatabaseService {
       const result = await pool.query(query, values);
       return result.rows;
     } catch (error) {
-      console.error('Error fetching recent posts:', error);
+      console.error("Error fetching recent posts:", error);
       throw error;
     }
   }
@@ -209,7 +209,7 @@ export class DatabaseService {
       const result = await pool.query(query);
       return result.rows;
     } catch (error) {
-      console.error('Error fetching platform statistics:', error);
+      console.error("Error fetching platform statistics:", error);
       throw error;
     }
   }
@@ -230,7 +230,7 @@ export class DatabaseService {
       const result = await pool.query(query, [id]);
       return result.rows[0] || null;
     } catch (error) {
-      console.error('Error fetching post:', error);
+      console.error("Error fetching post:", error);
       throw error;
     }
   }
@@ -240,10 +240,10 @@ export class DatabaseService {
    */
   static async testConnection(): Promise<boolean> {
     try {
-      await pool.query('SELECT NOW()');
+      await pool.query("SELECT NOW()");
       return true;
     } catch (error) {
-      console.error('Database connection test failed:', error);
+      console.error("Database connection test failed:", error);
       return false;
     }
   }

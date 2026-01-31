@@ -44,7 +44,8 @@ export function Header() {
             Generador de Contenido para Redes Sociales
           </h2>
           <p className="text-sm text-gray-600 mt-1">
-            Plataforma Profesional de Marketing para Instagram, Twitter, Facebook, TikTok y LinkedIn
+            Plataforma Profesional de Marketing para Instagram, Twitter,
+            Facebook, TikTok y LinkedIn
           </p>
         </div>
       </div>

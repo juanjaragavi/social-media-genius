@@ -48,27 +48,27 @@ export interface PlatformSpec {
 
 export const PLATFORM_SPECS: Record<string, PlatformSpec> = {
   instagram: {
-    name: 'Instagram',
+    name: "Instagram",
     text: {
       maxChars: 2200,
       sweetSpot: 125, // Before "more" button
     },
     images: {
-      formats: ['JPG', 'PNG'],
+      formats: ["JPG", "PNG"],
       maxSizeMB: 15,
       dimensions: [
-        { name: 'Square', width: 1080, height: 1080, aspectRatio: '1:1' },
-        { name: 'Portrait', width: 1080, height: 1350, aspectRatio: '4:5' },
-        { name: 'Story/Reel', width: 1080, height: 1920, aspectRatio: '9:16' },
+        { name: "Square", width: 1080, height: 1080, aspectRatio: "1:1" },
+        { name: "Portrait", width: 1080, height: 1350, aspectRatio: "4:5" },
+        { name: "Story/Reel", width: 1080, height: 1920, aspectRatio: "9:16" },
       ],
     },
     videos: {
-      formats: ['MP4', 'MOV'],
+      formats: ["MP4", "MOV"],
       maxSizeMB: 15,
       maxDurationSeconds: 900, // 15 minutes uploaded, 90s in-app
       dimensions: [
-        { name: 'Story', width: 1080, height: 1920, aspectRatio: '9:16' },
-        { name: 'Reel', width: 1080, height: 1920, aspectRatio: '9:16' },
+        { name: "Story", width: 1080, height: 1920, aspectRatio: "9:16" },
+        { name: "Reel", width: 1080, height: 1920, aspectRatio: "9:16" },
       ],
     },
     hashtags: {
@@ -78,24 +78,24 @@ export const PLATFORM_SPECS: Record<string, PlatformSpec> = {
   },
 
   twitter: {
-    name: 'X (Twitter)',
+    name: "X (Twitter)",
     text: {
       maxChars: 280, // Standard users (Premium: 25,000)
     },
     images: {
-      formats: ['JPG', 'PNG', 'GIF'],
+      formats: ["JPG", "PNG", "GIF"],
       maxSizeMB: 5,
       dimensions: [
-        { name: 'Standard', width: 1200, height: 675, aspectRatio: '16:9' },
+        { name: "Standard", width: 1200, height: 675, aspectRatio: "16:9" },
       ],
     },
     videos: {
-      formats: ['MP4', 'MOV'],
+      formats: ["MP4", "MOV"],
       maxSizeMB: 512, // Standard (1GB Pro, 16GB Premium+)
       maxDurationSeconds: 140, // Standard (4 hours Premium+)
       dimensions: [
-        { name: 'Landscape', width: 1280, height: 720, aspectRatio: '16:9' },
-        { name: 'Portrait', width: 720, height: 1280, aspectRatio: '9:16' },
+        { name: "Landscape", width: 1280, height: 720, aspectRatio: "16:9" },
+        { name: "Portrait", width: 720, height: 1280, aspectRatio: "9:16" },
       ],
     },
     hashtags: {
@@ -105,25 +105,25 @@ export const PLATFORM_SPECS: Record<string, PlatformSpec> = {
   },
 
   facebook: {
-    name: 'Facebook',
+    name: "Facebook",
     text: {
       maxChars: 63206,
       sweetSpot: 80, // Posts under 80 chars get 66% more engagement
     },
     images: {
-      formats: ['JPG', 'PNG'],
+      formats: ["JPG", "PNG"],
       maxSizeMB: 30,
       dimensions: [
-        { name: 'Standard', width: 1200, height: 630, aspectRatio: '1.91:1' },
+        { name: "Standard", width: 1200, height: 630, aspectRatio: "1.91:1" },
       ],
     },
     videos: {
-      formats: ['MP4'],
+      formats: ["MP4"],
       maxSizeMB: 4000, // 4GB
       maxDurationSeconds: 14460, // 241 minutes
       dimensions: [
-        { name: 'Landscape', width: 1280, height: 720, aspectRatio: '16:9' },
-        { name: 'Portrait', width: 1080, height: 1920, aspectRatio: '9:16' },
+        { name: "Landscape", width: 1280, height: 720, aspectRatio: "16:9" },
+        { name: "Portrait", width: 1080, height: 1920, aspectRatio: "9:16" },
       ],
     },
     hashtags: {
@@ -132,28 +132,33 @@ export const PLATFORM_SPECS: Record<string, PlatformSpec> = {
     },
     openGraph: {
       required: true,
-      imageSize: '1200x630',
+      imageSize: "1200x630",
     },
   },
 
   tiktok: {
-    name: 'TikTok',
+    name: "TikTok",
     text: {
       maxChars: 4000, // Increased in 2026 (up from 2,200)
     },
     images: {
-      formats: ['JPG', 'PNG'],
+      formats: ["JPG", "PNG"],
       maxSizeMB: 50,
       dimensions: [
-        { name: 'Story Carousel', width: 1080, height: 1920, aspectRatio: '9:16' },
+        {
+          name: "Story Carousel",
+          width: 1080,
+          height: 1920,
+          aspectRatio: "9:16",
+        },
       ],
     },
     videos: {
-      formats: ['MP4', 'MOV'],
+      formats: ["MP4", "MOV"],
       maxSizeMB: 50, // Use async upload for larger files
       maxDurationSeconds: 3600, // 60 minutes
       dimensions: [
-        { name: 'Standard', width: 1080, height: 1920, aspectRatio: '9:16' },
+        { name: "Standard", width: 1080, height: 1920, aspectRatio: "9:16" },
       ],
     },
     hashtags: {
@@ -163,25 +168,25 @@ export const PLATFORM_SPECS: Record<string, PlatformSpec> = {
   },
 
   linkedin: {
-    name: 'LinkedIn',
+    name: "LinkedIn",
     text: {
       maxChars: 3000,
       sweetSpot: 1500, // 1,000-1,500 chars for best engagement
     },
     images: {
-      formats: ['JPG', 'PNG'],
+      formats: ["JPG", "PNG"],
       maxSizeMB: 10,
       dimensions: [
-        { name: 'Standard', width: 1200, height: 627, aspectRatio: '1.91:1' },
-        { name: 'Story', width: 1080, height: 1920, aspectRatio: '9:16' },
+        { name: "Standard", width: 1200, height: 627, aspectRatio: "1.91:1" },
+        { name: "Story", width: 1080, height: 1920, aspectRatio: "9:16" },
       ],
     },
     videos: {
-      formats: ['MP4', 'MOV'],
+      formats: ["MP4", "MOV"],
       maxSizeMB: 200,
       maxDurationSeconds: 600, // 10 minutes
       dimensions: [
-        { name: 'Landscape', width: 1280, height: 720, aspectRatio: '16:9' },
+        { name: "Landscape", width: 1280, height: 720, aspectRatio: "16:9" },
       ],
     },
     hashtags: {
@@ -235,7 +240,9 @@ export function getOptimalAspectRatio(platform: string): string | null {
  * @param platform - Platform identifier
  * @returns MediaDimension object or null
  */
-export function getOptimalImageDimensions(platform: string): MediaDimension | null {
+export function getOptimalImageDimensions(
+  platform: string,
+): MediaDimension | null {
   const spec = getPlatformSpec(platform);
   if (!spec || spec.images.dimensions.length === 0) {
     return null;
@@ -248,7 +255,9 @@ export function getOptimalImageDimensions(platform: string): MediaDimension | nu
  * @param platform - Platform identifier
  * @returns MediaDimension object or null
  */
-export function getOptimalVideoDimensions(platform: string): MediaDimension | null {
+export function getOptimalVideoDimensions(
+  platform: string,
+): MediaDimension | null {
   const spec = getPlatformSpec(platform);
   if (!spec || spec.videos.dimensions.length === 0) {
     return null;

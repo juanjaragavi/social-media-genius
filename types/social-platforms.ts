@@ -2,50 +2,55 @@
  * Type Definitions for Social Media Platforms
  */
 
-export type Platform = 'instagram' | 'twitter' | 'facebook' | 'tiktok' | 'linkedin';
+export type Platform =
+  | "instagram"
+  | "twitter"
+  | "facebook"
+  | "tiktok"
+  | "linkedin";
 
 export type PostType =
-  | 'promotional'
-  | 'educational'
-  | 'entertaining'
-  | 'news'
-  | 'announcement'
-  | 'behind-the-scenes'
-  | 'user-generated'
-  | 'poll'
-  | 'question';
+  | "promotional"
+  | "educational"
+  | "entertaining"
+  | "news"
+  | "announcement"
+  | "behind-the-scenes"
+  | "user-generated"
+  | "poll"
+  | "question";
 
 export type Tone =
-  | 'casual'
-  | 'professional'
-  | 'friendly'
-  | 'urgent'
-  | 'inspiring'
-  | 'humorous'
-  | 'empathetic'
-  | 'authoritative';
+  | "casual"
+  | "professional"
+  | "friendly"
+  | "urgent"
+  | "inspiring"
+  | "humorous"
+  | "empathetic"
+  | "authoritative";
 
-export type ContentLength = 'short' | 'medium' | 'long';
+export type ContentLength = "short" | "medium" | "long";
 
 export type ImageStyle =
-  | 'product-photo'
-  | 'lifestyle'
-  | 'infographic'
-  | 'illustration'
-  | 'minimalist'
-  | 'vibrant'
-  | 'professional'
-  | 'candid';
+  | "product-photo"
+  | "lifestyle"
+  | "infographic"
+  | "illustration"
+  | "minimalist"
+  | "vibrant"
+  | "professional"
+  | "candid";
 
 export type VideoStyle =
-  | 'dynamic'
-  | 'cinematic'
-  | 'tutorial'
-  | 'behind-the-scenes'
-  | 'product-showcase'
-  | 'testimonial'
-  | 'animated'
-  | 'timelapse';
+  | "dynamic"
+  | "cinematic"
+  | "tutorial"
+  | "behind-the-scenes"
+  | "product-showcase"
+  | "testimonial"
+  | "animated"
+  | "timelapse";
 
 export interface GeneratePostRequest {
   platform: Platform;
@@ -72,10 +77,13 @@ export interface GeneratePostResponse {
     description: string;
     image?: string;
   };
-  platformOptimizations?: Record<Platform, {
-    content: string;
-    hashtags: string[];
-  }>;
+  platformOptimizations?: Record<
+    Platform,
+    {
+      content: string;
+      hashtags: string[];
+    }
+  >;
   metadata: {
     model: string;
     tokensUsed: {
@@ -102,7 +110,7 @@ export interface SocialPost {
   configuration: GeneratePostRequest;
   generatedContent: GeneratePostResponse;
   validationResults?: unknown;
-  status: 'draft' | 'generated' | 'published';
+  status: "draft" | "generated" | "published";
   tokenUsage?: {
     promptTokens: number;
     completionTokens: number;

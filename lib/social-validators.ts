@@ -5,7 +5,7 @@
  * against platform-specific constraints defined in social-platform-specs.ts
  */
 
-import { PLATFORM_SPECS } from './social-platform-specs';
+import { PLATFORM_SPECS } from "./social-platform-specs";
 
 export interface ValidationResult {
   valid: boolean;
@@ -34,7 +34,7 @@ export interface ValidationResult {
  */
 export function validateTextContent(
   platform: string,
-  content: string
+  content: string,
 ): ValidationResult {
   const spec = PLATFORM_SPECS[platform.toLowerCase()];
 
@@ -54,7 +54,7 @@ export function validateTextContent(
   // Check character limit
   if (charCount > spec.text.maxChars) {
     errors.push(
-      `Content exceeds ${spec.name} character limit (${charCount}/${spec.text.maxChars})`
+      `Content exceeds ${spec.name} character limit (${charCount}/${spec.text.maxChars})`,
     );
   }
 
@@ -62,14 +62,14 @@ export function validateTextContent(
   if (spec.text.sweetSpot && charCount > spec.text.sweetSpot) {
     warnings.push(
       `Content exceeds optimal length for ${spec.name} (${charCount}/${spec.text.sweetSpot} chars). ` +
-      `Consider keeping key message in first ${spec.text.sweetSpot} characters for better visibility.`
+        `Consider keeping key message in first ${spec.text.sweetSpot} characters for better visibility.`,
     );
   }
 
   // Warning for very short content (less than 10 chars)
   if (charCount < 10 && charCount > 0) {
     warnings.push(
-      `Content is very short (${charCount} chars). Consider adding more context for better engagement.`
+      `Content is very short (${charCount} chars). Consider adding more context for better engagement.`,
     );
   }
 
@@ -93,7 +93,7 @@ export function validateTextContent(
  */
 export function validateHashtags(
   platform: string,
-  hashtags: string[]
+  hashtags: string[],
 ): ValidationResult {
   const spec = PLATFORM_SPECS[platform.toLowerCase()];
 
@@ -113,7 +113,7 @@ export function validateHashtags(
   // Check hashtag count limit
   if (count > spec.hashtags.max) {
     errors.push(
-      `Too many hashtags for ${spec.name} (${count}/${spec.hashtags.max})`
+      `Too many hashtags for ${spec.name} (${count}/${spec.hashtags.max})`,
     );
   }
 
@@ -121,14 +121,14 @@ export function validateHashtags(
   if (count > spec.hashtags.recommended) {
     warnings.push(
       `More hashtags than recommended for ${spec.name}. ` +
-      `Recommended: ${spec.hashtags.recommended}, Current: ${count}. ` +
-      `Research shows fewer, more targeted hashtags often perform better.`
+        `Recommended: ${spec.hashtags.recommended}, Current: ${count}. ` +
+        `Research shows fewer, more targeted hashtags often perform better.`,
     );
   }
 
   // Validate individual hashtags
   hashtags.forEach((tag, index) => {
-    const cleanTag = tag.replace(/^#/, '');
+    const cleanTag = tag.replace(/^#/, "");
 
     // Check for empty hashtags
     if (cleanTag.length === 0) {
@@ -136,7 +136,7 @@ export function validateHashtags(
     }
 
     // Check for spaces (invalid)
-    if (cleanTag.includes(' ')) {
+    if (cleanTag.includes(" ")) {
       errors.push(`Hashtag "${tag}" contains spaces (invalid)`);
     }
 
@@ -144,15 +144,18 @@ export function validateHashtags(
     if (cleanTag.length > 30) {
       warnings.push(
         `Hashtag "${tag}" is very long (${cleanTag.length} chars). ` +
-        `Consider using shorter, more memorable tags.`
+          `Consider using shorter, more memorable tags.`,
       );
     }
   });
 
   // Warning for no hashtags on platforms where they're valuable
-  if (count === 0 && ['instagram', 'tiktok', 'twitter'].includes(platform.toLowerCase())) {
+  if (
+    count === 0 &&
+    ["instagram", "tiktok", "twitter"].includes(platform.toLowerCase())
+  ) {
     warnings.push(
-      `No hashtags provided. Hashtags can significantly improve discoverability on ${spec.name}.`
+      `No hashtags provided. Hashtags can significantly improve discoverability on ${spec.name}.`,
     );
   }
 
@@ -182,7 +185,7 @@ export function validateImage(
   width: number,
   height: number,
   fileSizeMB: number,
-  format: string
+  format: string,
 ): ValidationResult {
   const spec = PLATFORM_SPECS[platform.toLowerCase()];
 
@@ -199,11 +202,11 @@ export function validateImage(
   const warnings: string[] = [];
 
   // Check format
-  const normalizedFormat = format.toUpperCase().replace('JPEG', 'JPG');
+  const normalizedFormat = format.toUpperCase().replace("JPEG", "JPG");
   if (!spec.images.formats.includes(normalizedFormat)) {
     errors.push(
       `Invalid image format for ${spec.name}. ` +
-      `Supported formats: ${spec.images.formats.join(', ')}`
+        `Supported formats: ${spec.images.formats.join(", ")}`,
     );
   }
 
@@ -211,36 +214,38 @@ export function validateImage(
   if (fileSizeMB > spec.images.maxSizeMB) {
     errors.push(
       `Image size exceeds ${spec.name} limit ` +
-      `(${fileSizeMB.toFixed(2)}MB / ${spec.images.maxSizeMB}MB)`
+        `(${fileSizeMB.toFixed(2)}MB / ${spec.images.maxSizeMB}MB)`,
     );
   }
 
   // Check dimensions and aspect ratio
   const aspectRatio = width / height;
-  const matchingDimension = spec.images.dimensions.find(dim => {
+  const matchingDimension = spec.images.dimensions.find((dim) => {
     const dimRatio = dim.width / dim.height;
     return Math.abs(aspectRatio - dimRatio) < 0.05; // Allow 5% variance
   });
 
   if (!matchingDimension) {
     const recommendedRatios = spec.images.dimensions
-      .map(d => `${d.name} (${d.aspectRatio})`)
-      .join(', ');
+      .map((d) => `${d.name} (${d.aspectRatio})`)
+      .join(", ");
 
     warnings.push(
       `Image aspect ratio (${width}x${height}) doesn't match ` +
-      `recommended dimensions for ${spec.name}. ` +
-      `Recommended: ${recommendedRatios}. ` +
-      `Your image may be cropped or not display optimally.`
+        `recommended dimensions for ${spec.name}. ` +
+        `Recommended: ${recommendedRatios}. ` +
+        `Your image may be cropped or not display optimally.`,
     );
   }
 
   // Check if dimensions are too small
-  const minRecommendedWidth = Math.min(...spec.images.dimensions.map(d => d.width));
+  const minRecommendedWidth = Math.min(
+    ...spec.images.dimensions.map((d) => d.width),
+  );
   if (width < minRecommendedWidth * 0.5) {
     warnings.push(
       `Image width (${width}px) is quite small. ` +
-      `Recommended minimum: ${minRecommendedWidth}px for best quality on ${spec.name}.`
+        `Recommended minimum: ${minRecommendedWidth}px for best quality on ${spec.name}.`,
     );
   }
 
@@ -274,7 +279,7 @@ export function validateVideo(
   height: number,
   durationSeconds: number,
   fileSizeMB: number,
-  format: string
+  format: string,
 ): ValidationResult {
   const spec = PLATFORM_SPECS[platform.toLowerCase()];
 
@@ -295,7 +300,7 @@ export function validateVideo(
   if (!spec.videos.formats.includes(normalizedFormat)) {
     errors.push(
       `Invalid video format for ${spec.name}. ` +
-      `Supported formats: ${spec.videos.formats.join(', ')}`
+        `Supported formats: ${spec.videos.formats.join(", ")}`,
     );
   }
 
@@ -303,7 +308,7 @@ export function validateVideo(
   if (fileSizeMB > spec.videos.maxSizeMB) {
     errors.push(
       `Video size exceeds ${spec.name} limit ` +
-      `(${fileSizeMB.toFixed(2)}MB / ${spec.videos.maxSizeMB}MB)`
+        `(${fileSizeMB.toFixed(2)}MB / ${spec.videos.maxSizeMB}MB)`,
     );
   }
 
@@ -311,7 +316,7 @@ export function validateVideo(
   if (durationSeconds > spec.videos.maxDurationSeconds) {
     errors.push(
       `Video duration exceeds ${spec.name} limit ` +
-      `(${durationSeconds}s / ${spec.videos.maxDurationSeconds}s)`
+        `(${durationSeconds}s / ${spec.videos.maxDurationSeconds}s)`,
     );
   }
 
@@ -319,42 +324,42 @@ export function validateVideo(
   if (durationSeconds < 3) {
     warnings.push(
       `Video is very short (${durationSeconds}s). ` +
-      `Consider making it at least 3-5 seconds for better viewer experience.`
+        `Consider making it at least 3-5 seconds for better viewer experience.`,
     );
   }
 
   // Check dimensions and aspect ratio
   const aspectRatio = width / height;
-  const matchingDimension = spec.videos.dimensions.find(dim => {
+  const matchingDimension = spec.videos.dimensions.find((dim) => {
     const dimRatio = dim.width / dim.height;
     return Math.abs(aspectRatio - dimRatio) < 0.05; // Allow 5% variance
   });
 
   if (!matchingDimension) {
     const recommendedRatios = spec.videos.dimensions
-      .map(d => `${d.name} (${d.aspectRatio})`)
-      .join(', ');
+      .map((d) => `${d.name} (${d.aspectRatio})`)
+      .join(", ");
 
     warnings.push(
       `Video aspect ratio (${width}x${height}) doesn't match ` +
-      `recommended dimensions for ${spec.name}. ` +
-      `Recommended: ${recommendedRatios}. ` +
-      `Your video may be cropped or pillarboxed.`
+        `recommended dimensions for ${spec.name}. ` +
+        `Recommended: ${recommendedRatios}. ` +
+        `Your video may be cropped or pillarboxed.`,
     );
   }
 
   // Platform-specific warnings
-  if (platform.toLowerCase() === 'instagram' && durationSeconds > 90) {
+  if (platform.toLowerCase() === "instagram" && durationSeconds > 90) {
     warnings.push(
       `Video is longer than 90 seconds. For Instagram, in-app recorded Reels are limited to 90s. ` +
-      `Uploaded videos can be up to 15 minutes but shorter content often performs better.`
+        `Uploaded videos can be up to 15 minutes but shorter content often performs better.`,
     );
   }
 
-  if (platform.toLowerCase() === 'tiktok' && durationSeconds > 60) {
+  if (platform.toLowerCase() === "tiktok" && durationSeconds > 60) {
     warnings.push(
       `Video is longer than 60 seconds. While TikTok supports up to 60 minutes, ` +
-      `shorter content (15-60s) typically gets better engagement.`
+        `shorter content (15-60s) typically gets better engagement.`,
     );
   }
 
@@ -384,7 +389,7 @@ export function validateVideo(
 export function validatePost(
   platform: string,
   content: string,
-  hashtags: string[] = []
+  hashtags: string[] = [],
 ): ValidationResult {
   const textResult = validateTextContent(platform, content);
   const hashtagResult = validateHashtags(platform, hashtags);

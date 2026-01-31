@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { VeoService } from '@/lib/services/veo-service';
+import { NextRequest, NextResponse } from "next/server";
+import { VeoService } from "@/lib/services/veo-service";
 
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
@@ -10,8 +10,8 @@ export async function POST(request: NextRequest) {
     // Validate required fields
     if (!body.prompt || !body.platform) {
       return NextResponse.json(
-        { error: 'Missing required fields: prompt, platform' },
-        { status: 400 }
+        { error: "Missing required fields: prompt, platform" },
+        { status: 400 },
       );
     }
 
@@ -24,18 +24,19 @@ export async function POST(request: NextRequest) {
       platform: body.platform,
       durationSeconds: body.durationSeconds,
       aspectRatio: body.aspectRatio,
-      style: body.style || 'dynamic',
+      style: body.style || "dynamic",
       negativePrompt: body.negativePrompt,
     });
 
     if (!result.success) {
       return NextResponse.json(
-        { 
-          error: result.error || 'Video generation failed',
+        {
+          error: result.error || "Video generation failed",
           available: false,
-          message: 'Veo 3.1 is currently in preview. Check back soon for full video generation support.',
+          message:
+            "Veo 3.1 is currently in preview. Check back soon for full video generation support.",
         },
-        { status: 503 }
+        { status: 503 },
       );
     }
 
@@ -54,14 +55,14 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('❌ Video generation error:', error);
+    console.error("❌ Video generation error:", error);
 
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? error.message : "Unknown error",
         details: error instanceof Error ? error.stack : undefined,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -73,21 +74,21 @@ export async function GET() {
     const health = await veoService.healthCheck();
 
     return NextResponse.json({
-      service: 'Veo 3.1 Fast Generate',
+      service: "Veo 3.1 Fast Generate",
       ...health,
-      note: health.available 
-        ? 'Video generation is available' 
-        : 'Video generation is in preview - API access may be limited',
+      note: health.available
+        ? "Video generation is available"
+        : "Video generation is in preview - API access may be limited",
     });
   } catch (error) {
     return NextResponse.json(
       {
-        service: 'Veo 3.1 Fast Generate',
+        service: "Veo 3.1 Fast Generate",
         configured: false,
         available: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -1,5 +1,5 @@
-import { type ClassValue, clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import { type ClassValue, clsx } from "clsx";
+import { twMerge } from "tailwind-merge";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -20,27 +20,27 @@ export function formatDuration(seconds: number): string {
 
 export function truncate(text: string, maxLength: number): string {
   if (text.length <= maxLength) return text;
-  return text.substring(0, maxLength - 3) + '...';
+  return text.substring(0, maxLength - 3) + "...";
 }
 
 export function getPlatformColor(platform: string): string {
   const colors: Record<string, string> = {
-    instagram: 'bg-linear-to-r from-purple-600 to-pink-600',
-    twitter: 'bg-sky-500',
-    facebook: 'bg-blue-600',
-    tiktok: 'bg-black',
-    linkedin: 'bg-blue-700',
+    instagram: "bg-linear-to-r from-purple-600 to-pink-600",
+    twitter: "bg-sky-500",
+    facebook: "bg-blue-600",
+    tiktok: "bg-black",
+    linkedin: "bg-blue-700",
   };
-  return colors[platform.toLowerCase()] || 'bg-gray-600';
+  return colors[platform.toLowerCase()] || "bg-gray-600";
 }
 
 export function getPlatformIcon(platform: string): string {
   const icons: Record<string, string> = {
-    instagram: '📷',
-    twitter: '🐦',
-    facebook: '👥',
-    tiktok: '🎵',
-    linkedin: '💼',
+    instagram: "📷",
+    twitter: "🐦",
+    facebook: "👥",
+    tiktok: "🎵",
+    linkedin: "💼",
   };
-  return icons[platform.toLowerCase()] || '📱';
+  return icons[platform.toLowerCase()] || "📱";
 }
