@@ -111,7 +111,8 @@ export async function GET() {
     diagnostics.authImport = {
       status: "❌ auth module failed to load",
       error: err instanceof Error ? err.message : String(err),
-      stack: err instanceof Error ? err.stack?.split("\n").slice(0, 5) : undefined,
+      stack:
+        err instanceof Error ? err.stack?.split("\n").slice(0, 5) : undefined,
     };
   }
 

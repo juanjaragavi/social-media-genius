@@ -49,7 +49,8 @@ export async function GET(req: Request) {
   } catch (err: unknown) {
     results.signInError = {
       message: err instanceof Error ? err.message : String(err),
-      stack: err instanceof Error ? err.stack?.split("\n").slice(0, 5) : undefined,
+      stack:
+        err instanceof Error ? err.stack?.split("\n").slice(0, 5) : undefined,
     };
   }
 
