@@ -49,9 +49,7 @@ function getStorage(): Storage | null {
 
 /** Get the configured bucket name. */
 function getBucketName(): string {
-  return (
-    process.env.GCS_BUCKET_NAME || "social-media-genius-media-development"
-  );
+  return process.env.GCS_BUCKET_NAME || "social-media-genius-media-development";
 }
 
 /**

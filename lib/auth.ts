@@ -33,11 +33,11 @@ const trustedOrigins = [
   "http://localhost:3050", // Local development
   "https://social-media-genius.vercel.app", // Staging / Preview
   "https://social.topnetworks.co", // Production
-  ...(process.env.VERCEL_URL
-    ? [`https://${process.env.VERCEL_URL}`]
-    : []),
+  ...(process.env.VERCEL_URL ? [`https://${process.env.VERCEL_URL}`] : []),
   baseURL, // Always trust the resolved base
-].filter((value, index, self) => Boolean(value) && self.indexOf(value) === index);
+].filter(
+  (value, index, self) => Boolean(value) && self.indexOf(value) === index,
+);
 
 export const auth = betterAuth({
   baseURL,

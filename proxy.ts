@@ -23,7 +23,8 @@ export function proxy(request: NextRequest) {
   // Define route types
   const isAuthAPIRoute = pathname.startsWith("/api/auth");
   const isLoginRoute = pathname === "/login";
-  const isProtectedRoute = pathname === "/" || pathname.startsWith("/dashboard");
+  const isProtectedRoute =
+    pathname === "/" || pathname.startsWith("/dashboard");
 
   // Never intercept auth API routes
   if (isAuthAPIRoute) {

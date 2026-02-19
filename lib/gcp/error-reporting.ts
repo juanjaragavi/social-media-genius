@@ -69,8 +69,7 @@ export function reportError(
     request,
     undefined,
     (err: Error | string | null | undefined) => {
-      if (err)
-        console.warn("[SocialMediaGenius] Error report failed:", err);
+      if (err) console.warn("[SocialMediaGenius] Error report failed:", err);
     },
   );
 }
