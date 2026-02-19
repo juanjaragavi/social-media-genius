@@ -16,10 +16,14 @@ import { NextRequest, NextResponse } from "next/server";
 const handler = toNextJsHandler(auth);
 
 /**
- * Wrap the Better Auth handler with error catching so 500s
- * surface a diagnostic message in the Vercel function logs.
+ * Wrap the Better Auth handler with diagnostics.
+ * If Better Auth returns a 500, clone the response, read the body,
+ * and log it so the actual error is visible in Vercel function logs.
  */
 async function safeHandler(req: NextRequest) {
+  const pathname = req.nextUrl.pathname;
+  console.log(`[Auth] ${req.method} ${pathname}`);
+
   try {
     const method = req.method as "GET" | "POST";
     const fn = method === "GET" ? handler.GET : handler.POST;
@@ -29,16 +33,48 @@ async function safeHandler(req: NextRequest) {
         { status: 405 },
       );
     }
-    return await fn(req);
+
+    const response = await fn(req);
+
+    // If Better Auth returned a 4xx/5xx, log the body for debugging
+    if (response.status >= 400) {
+      const cloned = response.clone();
+      try {
+        const body = await cloned.text();
+        console.error(
+          `[Auth] ${req.method} ${pathname} → ${response.status}:`,
+          body,
+        );
+        // Temporarily return the actual error in the response for debugging
+        if (response.status >= 500) {
+          return NextResponse.json(
+            {
+              error: "Better Auth internal error",
+              status: response.status,
+              detail: body,
+              url: pathname,
+            },
+            { status: response.status },
+          );
+        }
+      } catch {
+        console.error(
+          `[Auth] ${req.method} ${pathname} → ${response.status} (could not read body)`,
+        );
+      }
+    }
+
+    return response;
   } catch (error: unknown) {
     const message =
       error instanceof Error ? error.message : "Unknown auth error";
     const stack = error instanceof Error ? error.stack : undefined;
-    console.error("[SocialMediaGenius] Auth route error:", message, stack);
+    console.error("[Auth] Unhandled exception:", message, stack);
     return NextResponse.json(
       {
-        error: "Internal auth error",
-        detail: process.env.NODE_ENV === "development" ? message : undefined,
+        error: "Unhandled auth exception",
+        message,
+        stack: stack?.split("\n").slice(0, 8),
       },
       { status: 500 },
     );
