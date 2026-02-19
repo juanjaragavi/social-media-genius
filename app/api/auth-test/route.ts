@@ -42,7 +42,8 @@ export async function GET(req: Request) {
       status: "error",
       message: err instanceof Error ? err.message : String(err),
       name: err instanceof Error ? err.name : undefined,
-      stack: err instanceof Error ? err.stack?.split("\n").slice(0, 10) : undefined,
+      stack:
+        err instanceof Error ? err.stack?.split("\n").slice(0, 10) : undefined,
       cause: err instanceof Error && err.cause ? String(err.cause) : undefined,
       raw: JSON.stringify(err, Object.getOwnPropertyNames(err as object)),
     };
@@ -116,7 +117,8 @@ export async function GET(req: Request) {
   // Test 4: Auth config inspection
   results.authOptions = {
     baseURL: (auth.options as Record<string, unknown>)?.baseURL,
-    socialProvidersConfigured: !!(auth.options as Record<string, unknown>)?.socialProviders,
+    socialProvidersConfigured: !!(auth.options as Record<string, unknown>)
+      ?.socialProviders,
   };
 
   return NextResponse.json(results, {
