@@ -10,6 +10,26 @@ import { nextCookies } from "better-auth/next-js";
 import { Pool } from "pg";
 
 /**
+ * Resolve the application secret used for session encryption, CSRF tokens,
+ * and OAuth state signing.
+ *
+ * Priority:
+ *   1. BETTER_AUTH_SECRET (canonical)
+ *   2. AUTH_SECRET (common alias)
+ *
+ * In production, Better Auth will throw a hard error if neither is set.
+ * We surface a clear message here so the developer knows what to fix.
+ */
+const appSecret = process.env.BETTER_AUTH_SECRET || process.env.AUTH_SECRET;
+if (!appSecret && process.env.NODE_ENV === "production") {
+  console.error(
+    "[SocialMediaGenius] FATAL: BETTER_AUTH_SECRET is not set.",
+    "Add it to Vercel environment variables (all 3 scopes) and redeploy.",
+    "Generate one with: openssl rand -base64 32",
+  );
+}
+
+/**
  * Resolve the canonical app URL for the current environment.
  *
  * Priority:
@@ -81,6 +101,9 @@ if (process.env.VERCEL) {
 export const auth = betterAuth({
   baseURL,
   trustedOrigins,
+  // Explicitly pass the secret so Better Auth does not fall back to DEFAULT_SECRET.
+  // In production, DEFAULT_SECRET causes a hard throw (by design).
+  ...(appSecret ? { secret: appSecret } : {}),
   database: new Pool({
     connectionString: databaseURL,
     // Vercel functions have 10s default timeout; fail fast instead of hanging

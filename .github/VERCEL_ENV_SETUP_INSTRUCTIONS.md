@@ -73,6 +73,14 @@ Repeat for all 7 entries:
 
 Total: 7 new Production-only entries.
 
+> **CRITICAL**: Also confirm `BETTER_AUTH_SECRET` is set as a **shared** variable (all 3 environments). If it is missing, add it now:
+>
+> | Key                  | Value                                                           | Environments                     |
+> | -------------------- | --------------------------------------------------------------- | -------------------------------- |
+> | `BETTER_AUTH_SECRET` | _(copy from `.env` or generate with `openssl rand -base64 32`)_ | Production, Preview, Development |
+>
+> **Without this variable, authentication will fail with a 500 error in production.**
+
 ---
 
 ## STEP 4 — Add Preview-only variables
