@@ -54,6 +54,7 @@ function LoginContent() {
       const result = await signIn.social({
         provider: "google",
         callbackURL: "/",
+        errorCallbackURL: "/login",
       });
       if (result?.error) {
         setError(

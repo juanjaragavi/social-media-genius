@@ -14,9 +14,13 @@ import type { NextRequest } from "next/server";
 export function proxy(request: NextRequest) {
   // Better Auth prefixes cookies with __Secure- on HTTPS (production/staging).
   // On HTTP (localhost), the cookie name has no prefix.
+  // Also check the session_data cookie (set when cookieCache is enabled) as a
+  // fallback — if either token is present the user has an active session.
   const sessionCookie =
     request.cookies.get("__Secure-better-auth.session_token") ||
-    request.cookies.get("better-auth.session_token");
+    request.cookies.get("better-auth.session_token") ||
+    request.cookies.get("__Secure-better-auth.session_data") ||
+    request.cookies.get("better-auth.session_data");
 
   const { pathname } = request.nextUrl;
 
@@ -24,16 +28,21 @@ export function proxy(request: NextRequest) {
   const isAuthAPIRoute = pathname.startsWith("/api/auth");
   const isLoginRoute = pathname === "/login";
   const isProtectedRoute =
-    pathname === "/" || pathname.startsWith("/dashboard");
+    pathname === "/" ||
+    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/editor");
 
-  // Never intercept auth API routes
+  // Never intercept auth API routes — they must pass through so the OAuth
+  // callback can set cookies and issue redirects without interference.
   if (isAuthAPIRoute) {
     return NextResponse.next();
   }
 
   // Redirect unauthenticated users to login for protected routes
   if (isProtectedRoute && !sessionCookie) {
-    return NextResponse.redirect(new URL("/login", request.url));
+    const loginUrl = new URL("/login", request.url);
+    loginUrl.searchParams.set("next", pathname);
+    return NextResponse.redirect(loginUrl);
   }
 
   // Redirect authenticated users away from login

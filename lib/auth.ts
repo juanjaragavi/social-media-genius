@@ -6,6 +6,7 @@
  */
 
 import { betterAuth } from "better-auth";
+import { nextCookies } from "better-auth/next-js";
 import { Pool } from "pg";
 
 /**
@@ -108,9 +109,12 @@ export const auth = betterAuth({
       maxAge: 60 * 5, // 5 minutes
     },
   },
+  plugins: [nextCookies()],
   advanced: {
-    generateId: () => crypto.randomUUID(),
-  } as Record<string, unknown>,
+    database: {
+      generateId: "uuid",
+    },
+  },
 });
 
 export type Session = typeof auth.$Infer.Session;
