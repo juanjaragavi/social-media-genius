@@ -15,17 +15,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(`🎨 Image Generation Request for ${body.platform}`);
+    const bannerWidth = body.bannerWidth;
+    const bannerHeight = body.bannerHeight;
+    const bannerAspectRatio = body.bannerAspectRatio || body.aspectRatio;
+
+    console.log(
+      `🎨 Banner Image Generation for ${body.platform}${bannerWidth ? ` (${bannerWidth}×${bannerHeight})` : ""}`,
+    );
 
     const imagenService = new ImagenService();
 
+    // Enhance prompt for photorealistic banner output
+    const enhancedPrompt = body.prompt.includes("photorealistic")
+      ? body.prompt
+      : `${body.prompt}. Photorealistic, 8K resolution, hyper-detailed, professional photography, studio quality`;
+
     const result = await imagenService.generateImage({
-      prompt: body.prompt,
+      prompt: enhancedPrompt,
       platform: body.platform,
-      aspectRatio: body.aspectRatio,
+      aspectRatio: bannerAspectRatio,
       numberOfImages: body.numberOfImages || 1,
       style: body.style || "realistic",
-      negativePrompt: body.negativePrompt,
+      negativePrompt:
+        body.negativePrompt ||
+        "text, watermark, logo, letters, words, typography, low quality, blurry, pixelated",
     });
 
     if (!result.success) {
@@ -43,6 +56,11 @@ export async function POST(request: NextRequest) {
         dataUrl: result.dataUrl,
         base64: result.base64,
         mimeType: result.mimeType,
+      },
+      banner: {
+        width: bannerWidth,
+        height: bannerHeight,
+        aspectRatio: bannerAspectRatio,
       },
       metadata: {
         ...result.metadata,

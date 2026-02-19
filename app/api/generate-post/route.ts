@@ -1,27 +1,37 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getGoogleClient } from "@/lib/google-client";
 import { getPlatformSpec } from "@/lib/social-platform-specs";
-import type {
-  GeneratePostRequest,
-  GeneratePostResponse,
-} from "@/types/social-platforms";
+import { LOCALES, type OutputLocale } from "@/lib/i18n/translations";
+import type { GeneratePostRequest } from "@/types/social-platforms";
 
-// System prompt for social media post generation
-const getSystemPrompt = (platform: string) => {
+// System prompt for banner-focused social media content generation
+const getSystemPrompt = (
+  platform: string,
+  outputLocale: OutputLocale = "ES",
+  bannerWidth?: number,
+  bannerHeight?: number,
+) => {
   const platformSpec = getPlatformSpec(platform);
   if (!platformSpec) {
     throw new Error(`Unknown platform: ${platform}`);
   }
 
-  const platformGuidelines = {
+  const localeConfig = LOCALES[outputLocale];
+  const dimensionInfo =
+    bannerWidth && bannerHeight
+      ? `\n- **Banner Dimensions**: ${bannerWidth}×${bannerHeight} pixels`
+      : "";
+
+  const platformGuidelines: Record<string, string> = {
     instagram: `
 **Instagram Strategy**:
-- Visual-first platform: Content should complement stunning imagery
+- Visual-first platform: Banner should be the hero — content text complements stunning imagery
 - Casual, authentic tone with strategic emoji use
 - Storytelling approach: Hook in first 125 characters (before "more" button)
 - Hashtags: 3-5 highly relevant tags (2026 limit is 5 max)
 - Community engagement: Ask questions, encourage saves/shares
 - Call-to-action: Natural, not pushy (e.g., "Link in bio", "DM us", "Save for later")
+- Banner style: PHOTOREALISTIC, high-resolution, mobile-optimized visuals
 `,
     twitter: `
 **Twitter/X Strategy**:
@@ -30,7 +40,7 @@ const getSystemPrompt = (platform: string) => {
 - 1-2 hashtags maximum for better engagement
 - Thread-aware: Can suggest follow-up tweets
 - Conversational tone, personality-driven
-- Call-to-action: Clear and direct (reply, retweet, click link)
+- Banner style: PHOTOREALISTIC, eye-catching, 16:9 landscape optimized
 `,
     facebook: `
 **Facebook Strategy**:
@@ -38,8 +48,7 @@ const getSystemPrompt = (platform: string) => {
 - Storytelling with personal touch
 - Longer form accepted but keep key message in first 2-3 lines
 - 1-2 hashtags (engagement drops with 3-5)
-- Questions and polls perform well
-- Call-to-action: Encourage comments and shares
+- Banner style: PHOTOREALISTIC, high quality, shareable visuals
 `,
     tiktok: `
 **TikTok Strategy**:
@@ -47,8 +56,7 @@ const getSystemPrompt = (platform: string) => {
 - Trending language, Gen-Z friendly
 - Hook immediately with intrigue or value
 - 3+ hashtags, mix of trending and niche
-- Challenges, duets, and trends integration
-- Call-to-action: "Watch till the end", "Try this", "Duet this"
+- Banner style: PHOTOREALISTIC, vertical 9:16, bold and dynamic
 `,
     linkedin: `
 **LinkedIn Strategy**:
@@ -56,72 +64,64 @@ const getSystemPrompt = (platform: string) => {
 - Industry insights, business value
 - Data-driven or experience-based
 - 3-5 industry-specific hashtags
-- Longer posts accepted (1000-1500 chars optimal)
-- Call-to-action: Professional engagement (comment insights, share experience)
+- Banner style: PHOTOREALISTIC, professional, clean, authoritative
 `,
   };
 
-  return `# System Prompt - Social Media Post Generation for ${platformSpec.name}
+  return `# System Prompt - Social Media Banner & Post Generation for ${platformSpec.name}
 
-You are an expert social media content strategist specializing in creating platform-optimized posts that drive engagement.
+You are an expert social media content strategist and banner designer specializing in creating photorealistic, platform-optimized banners and posts that drive engagement.
+
+## LANGUAGE DIRECTIVE
+${localeConfig.geminiLanguageInstruction}
 
 ## Core Mission
-Generate compelling, platform-specific social media content that:
-1. Respects platform character limits and constraints
-2. Matches the platform's cultural norms and user expectations
-3. Drives measurable engagement (likes, shares, comments, saves)
-4. Includes optimal media generation prompts when requested
+Generate compelling, platform-specific social media content with a PRIMARY FOCUS on photorealistic banner/image generation. Content must:
+1. Respect platform character limits and constraints
+2. Match the platform's cultural norms and user expectations
+3. Drive measurable engagement (likes, shares, comments, saves)
+4. Include HIGHLY DETAILED photorealistic image generation prompts as the PRIMARY output
+5. All text content must be in the specified language
 
-${platformGuidelines[platform as keyof typeof platformGuidelines] || ""}
+${platformGuidelines[platform] || ""}
 
 ## Platform Specifications for ${platformSpec.name}
 - **Character Limit**: ${platformSpec.text.maxChars}${platformSpec.text.sweetSpot ? ` (optimal: ${platformSpec.text.sweetSpot} chars)` : ""}
 - **Hashtag Limit**: ${platformSpec.hashtags.max} (recommended: ${platformSpec.hashtags.recommended})
-- **Image Formats**: ${platformSpec.images.formats.join(", ")}
-- **Video Formats**: ${platformSpec.videos.formats.join(", ")}
+- **Image Formats**: ${platformSpec.images.formats.join(", ")}${dimensionInfo}
+
+## BANNER IMAGE PROMPT GUIDELINES (PRIMARY OUTPUT)
+
+The imagePrompt is the MOST IMPORTANT part of your output. Generate a detailed, photorealistic prompt that:
+
+1. **Photorealism First**: Describe a real-world scene, not illustrations or flat design
+2. **Lighting**: Specify lighting conditions (golden hour, studio lighting, natural daylight, neon, etc.)
+3. **Composition**: Describe camera angle, depth of field, focal length (e.g., "shot with 85mm f/1.4")
+4. **Materials & Textures**: Describe physical textures (glossy, matte, metallic, fabric, glass)
+5. **Environment**: Set a specific environment or background
+6. **Colors**: Specify color palette and mood
+7. **Quality Markers**: Include "8K resolution, photorealistic, hyper-detailed, professional photography"
+8. **NO TEXT IN IMAGE**: The banner image should NOT contain text overlays — text is added separately in the editor
+9. Minimum 80 words for the image prompt
 
 ## Content Structure Guidelines
 
 ### Hook (First Line/Sentence)
 - Grab attention immediately
 - Use curiosity, emotion, or value proposition
-- Platform-specific: ${platform === "instagram" ? "Visual descriptor or emotion" : platform === "twitter" ? "Hot take or news angle" : platform === "tiktok" ? "Trending phrase or challenge" : platform === "linkedin" ? "Professional insight" : "Engaging question"}
 
 ### Body (Main Content)
 - Clear, scannable, valuable
 - Use line breaks for readability
-- ${platform === "instagram" ? "Tell a story, be authentic" : platform === "twitter" ? "Get to the point fast" : platform === "tiktok" ? "Support the video narrative" : platform === "linkedin" ? "Provide depth and expertise" : "Conversational and relatable"}
-- Include relevant emojis naturally (not forced)
+- Include relevant emojis naturally
 
 ### Call-to-Action
 - Natural, not salesy
-- Platform-appropriate: ${platform === "instagram" ? '"Link in bio", "Save this", "DM us"' : platform === "twitter" ? '"Reply with...", "RT if..."' : platform === "tiktok" ? '"Try this", "Duet me"' : platform === "linkedin" ? '"Share your thoughts", "Connect with me"' : '"Comment below", "Tag a friend"'}
+- Platform-appropriate
 
 ### Hashtags
 - ${platformSpec.hashtags.recommended} recommended (max ${platformSpec.hashtags.max})
-- Mix of:
-  - Broad reach hashtags (high volume)
-  - Niche hashtags (targeted audience)
-  - Branded/campaign hashtags (if applicable)
-- Placement: ${platform === "instagram" || platform === "tiktok" ? "In caption or first comment" : "Integrated naturally in text"}
-
-## Media Generation Prompts
-
-### Image Prompt Guidelines
-When generating image prompts:
-- Platform-optimal dimensions: ${platformSpec.images.dimensions.map((d) => `${d.name} (${d.aspectRatio})`).join(", ")}
-- Style should match post tone and platform aesthetic
-- Consider trending visual styles on the platform
-- Avoid text overlays (unless explicitly requested)
-- Optimize for mobile viewing
-
-### Video Prompt Guidelines
-When generating video prompts:
-- Duration: ${platform === "instagram" ? "15-60 seconds for Reels" : platform === "twitter" ? "15-45 seconds" : platform === "tiktok" ? "15-60 seconds" : platform === "linkedin" ? "30-90 seconds" : "30-90 seconds"}
-- Aspect ratio: ${platformSpec.videos.dimensions[0]?.aspectRatio || "16:9 or 9:16"}
-- Hook in first 3 seconds
-- Fast-paced, dynamic
-- Platform trends: ${platform === "tiktok" ? "Trending sounds, effects, transitions" : platform === "instagram" ? "Reels trends, trending audio" : "Professional, polished"}
+- Mix of broad reach and niche hashtags
 
 ## Output Format
 
@@ -129,10 +129,10 @@ You MUST respond with valid JSON in this exact format:
 
 \`\`\`json
 {
-  "content": "The main post text content",
+  "content": "The main post text content (in the specified language)",
   "hashtags": ["hashtag1", "hashtag2", "hashtag3"],
-  "imagePrompt": "Detailed prompt for image generation (if requested)",
-  "videoPrompt": "Detailed prompt for video generation (if requested)",
+  "imagePrompt": "DETAILED photorealistic banner prompt (80+ words, in English for best Imagen results)",
+  "videoPrompt": "Video generation prompt (if requested, in English)",
   "metadata": {
     "estimatedEngagement": "high|medium|low",
     "contentType": "educational|entertaining|promotional|inspirational",
@@ -144,13 +144,11 @@ You MUST respond with valid JSON in this exact format:
 ## CRITICAL RULES
 1. **Character Limit**: Never exceed ${platformSpec.text.maxChars} characters
 2. **Hashtag Limit**: Never exceed ${platformSpec.hashtags.max} hashtags
-3. **Authenticity**: Sound human, not corporate or robotic
-4. **Platform Culture**: Match the platform's vibe and norms
-5. **Value First**: Every post must provide value (educate, entertain, inspire, inform)
-6. **Mobile-First**: Assume content is viewed on mobile
-7. **Accessibility**: Use clear language, describe visual elements when relevant
-
-Generate content that real users want to engage with, not just algorithm-optimized spam.`;
+3. **Image Prompt**: MUST be detailed, photorealistic, 80+ words minimum
+4. **Language**: Content text and hashtags in ${localeConfig.nativeName}; image prompts in English
+5. **No Text in Images**: Image prompts must NOT include text overlays
+6. **Photorealism**: Always specify photorealistic quality markers
+7. **Mobile-First**: Assume content is viewed on mobile`;
 };
 
 export async function POST(request: NextRequest) {
@@ -176,25 +174,41 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Build user prompt
-    const userPrompt = `Generate a ${body.platform} post with the following requirements:
+    const outputLocale: OutputLocale =
+      (body.outputLocale as OutputLocale) || "ES";
+    const localeConfig = LOCALES[outputLocale];
+
+    // Build user prompt with locale and banner dimensions
+    const dimensionNote =
+      body.bannerWidth && body.bannerHeight
+        ? `\n**Banner Dimensions**: ${body.bannerWidth}×${body.bannerHeight} (${body.bannerAspectRatio || "custom"})`
+        : "";
+
+    const userPrompt = `Generate a ${body.platform} banner post with the following requirements:
 
 **Post Type**: ${body.postType}
 **Topic**: ${body.topic}
 **Tone**: ${body.tone || "casual"}
 **Content Length**: ${body.contentLength || "medium"}
 **Include Hashtags**: ${body.includeHashtags !== false ? "Yes" : "No"}
-**Include Image**: ${body.includeImage ? `Yes (style: ${body.imageStyle || "professional"})` : "No"}
+**Include Image**: ${body.includeImage !== false ? "Yes — generate a DETAILED photorealistic banner prompt" : "No"}
+**Image Style**: photorealistic ${body.imageStyle ? `with ${body.imageStyle} elements` : ""}
 **Include Video**: ${body.includeVideo ? `Yes (style: ${body.videoStyle || "dynamic"})` : "No"}
+**Output Language**: ${localeConfig.nativeName} (${outputLocale})${dimensionNote}
 ${body.additionalInstructions ? `\n**Additional Instructions**: ${body.additionalInstructions}` : ""}
 
-Generate engaging, platform-optimized content that drives real engagement.`;
+Generate engaging, platform-optimized content with a PHOTOREALISTIC banner image prompt as the primary output.`;
 
-    // Get system prompt for platform
-    const systemPrompt = getSystemPrompt(body.platform);
+    // Get system prompt for platform with locale
+    const systemPrompt = getSystemPrompt(
+      body.platform,
+      outputLocale,
+      body.bannerWidth,
+      body.bannerHeight,
+    );
 
     console.log(
-      `🤖 Generating ${body.platform} post: ${body.postType} about "${body.topic}"`,
+      `🤖 Generating ${body.platform} banner: ${body.postType} about "${body.topic}" [${outputLocale}]`,
     );
 
     // Initialize Google client and generate content
@@ -224,7 +238,6 @@ Generate engaging, platform-optimized content that drives real engagement.`;
     const totalTokens = inputTokens + outputTokens;
 
     // Calculate cost (Gemini 2.5 Flash approximate pricing)
-    // Input: ~$0.075 per 1M tokens, Output: ~$0.30 per 1M tokens
     const costPerInputToken = 0.075 / 1_000_000;
     const costPerOutputToken = 0.3 / 1_000_000;
     const cost =
@@ -265,20 +278,55 @@ Generate engaging, platform-optimized content that drives real engagement.`;
       console.warn(
         `⚠️ Generated hashtags exceed limit: ${hashtagCount}/${platformSpec.hashtags.max}`,
       );
-      // Truncate to limit
       generatedPost.hashtags = generatedPost.hashtags.slice(
         0,
         platformSpec.hashtags.max,
       );
     }
 
-    // Build response matching GeneratedPostData type expected by frontend
+    // Auto-generate banner if image generation is enabled
+    let bannerData = undefined;
+    const campaignBanners = undefined;
+
+    if (body.includeImage !== false && generatedPost.imagePrompt) {
+      try {
+        console.log(`🎨 Auto-generating banner image...`);
+        const { ImagenService } = await import("@/lib/services/imagen-service");
+        const imagenService = new ImagenService();
+
+        const imageResult = await imagenService.generateImage({
+          prompt: generatedPost.imagePrompt,
+          platform: body.platform,
+          aspectRatio: body.bannerAspectRatio,
+          style: "realistic",
+        });
+
+        if (imageResult.success) {
+          bannerData = {
+            dataUrl: imageResult.dataUrl,
+            base64: imageResult.base64,
+            mimeType: imageResult.mimeType,
+            width: body.bannerWidth,
+            height: body.bannerHeight,
+            aspectRatio: body.bannerAspectRatio,
+          };
+          console.log(`✅ Banner generated successfully`);
+        } else {
+          console.warn(`⚠️ Banner generation failed: ${imageResult.error}`);
+        }
+      } catch (imgError) {
+        console.warn(`⚠️ Banner generation error:`, imgError);
+      }
+    }
+
+    // Build response
     const responseData = {
       platform: body.platform,
+      outputLocale,
       post: {
         content: generatedPost.content || "",
         hashtags: generatedPost.hashtags || [],
-        imagePrompt: body.includeImage ? generatedPost.imagePrompt : undefined,
+        imagePrompt: generatedPost.imagePrompt || undefined,
         videoPrompt: body.includeVideo ? generatedPost.videoPrompt : undefined,
         metadata: {
           estimatedEngagement:
@@ -287,6 +335,8 @@ Generate engaging, platform-optimized content that drives real engagement.`;
           characterCount: (generatedPost.content || "").length,
         },
       },
+      banner: bannerData,
+      campaignBanners,
       usage: {
         totalTokens,
         promptTokens: inputTokens,
@@ -297,7 +347,7 @@ Generate engaging, platform-optimized content that drives real engagement.`;
     };
 
     console.log(
-      `✅ Post generation completed in ${responseData.generationTimeMs}ms`,
+      `✅ Banner post generation completed in ${responseData.generationTimeMs}ms`,
     );
 
     return NextResponse.json(responseData);

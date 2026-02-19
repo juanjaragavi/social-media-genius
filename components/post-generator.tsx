@@ -19,8 +19,12 @@ import type {
   Tone,
   ContentLength,
   ImageStyle,
+  OutputLocale,
+  BannerDimensionPreset,
 } from "@/types/social-platforms";
 import { GeneratedPostData } from "@/types/generated-post";
+import { BANNER_DIMENSIONS } from "@/types/editor";
+import { LOCALES, UI_LABELS } from "@/lib/i18n/translations";
 
 interface PostGeneratorProps {
   onPostGenerated: (post: GeneratedPostData) => void;
@@ -33,11 +37,24 @@ export function PostGenerator({ onPostGenerated }: PostGeneratorProps) {
   const [tone, setTone] = useState<Tone>("casual");
   const [contentLength, setContentLength] = useState<ContentLength>("medium");
   const [includeHashtags, setIncludeHashtags] = useState(true);
-  const [includeImage, setIncludeImage] = useState(false);
+  const [includeImage, setIncludeImage] = useState(true);
   const [imageStyle, setImageStyle] = useState<ImageStyle>("professional");
   const [additionalInstructions, setAdditionalInstructions] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // Multilanguage
+  const [outputLocale, setOutputLocale] = useState<OutputLocale>("ES");
+
+  // Banner dimensions
+  const [selectedDimension, setSelectedDimension] =
+    useState<BannerDimensionPreset>(BANNER_DIMENSIONS[0]);
+
+  // Campaign mode
+  const [campaignMode, setCampaignMode] = useState(false);
+  const [campaignDimensions, setCampaignDimensions] = useState<
+    BannerDimensionPreset[]
+  >([BANNER_DIMENSIONS[0], BANNER_DIMENSIONS[3], BANNER_DIMENSIONS[5]]);
 
   const platforms: Platform[] = [
     "instagram",
@@ -79,45 +96,13 @@ export function PostGenerator({ onPostGenerated }: PostGeneratorProps) {
     "candid",
   ];
 
-  // Spanish translations for UI
-  const postTypeLabels: Record<PostType, string> = {
-    promotional: "Promocional",
-    educational: "Educativo",
-    entertaining: "Entretenido",
-    news: "Noticias",
-    announcement: "Anuncio",
-    "behind-the-scenes": "Detrás de Cámaras",
-    "user-generated": "Contenido de Usuario",
-    poll: "Encuesta",
-    question: "Pregunta",
-  };
-
-  const toneLabels: Record<Tone, string> = {
-    casual: "Casual",
-    professional: "Profesional",
-    friendly: "Amigable",
-    urgent: "Urgente",
-    inspiring: "Inspirador",
-    humorous: "Humorístico",
-    empathetic: "Empático",
-    authoritative: "Con Autoridad",
-  };
-
-  const contentLengthLabels: Record<ContentLength, string> = {
-    short: "Corto",
-    medium: "Medio",
-    long: "Largo",
-  };
-
-  const imageStyleLabels: Record<ImageStyle, string> = {
-    "product-photo": "Foto de Producto",
-    lifestyle: "Estilo de Vida",
-    infographic: "Infografía",
-    illustration: "Ilustración",
-    minimalist: "Minimalista",
-    vibrant: "Vibrante",
-    professional: "Profesional",
-    candid: "Espontáneo",
+  const handleCampaignDimensionChange = (index: number, dimLabel: string) => {
+    const dimension = BANNER_DIMENSIONS.find((d) => d.label === dimLabel);
+    if (dimension) {
+      const updated = [...campaignDimensions];
+      updated[index] = dimension;
+      setCampaignDimensions(updated);
+    }
   };
 
   const handleGenerate = async () => {
@@ -130,26 +115,34 @@ export function PostGenerator({ onPostGenerated }: PostGeneratorProps) {
     setError("");
 
     try {
+      const requestBody = {
+        platform,
+        postType,
+        topic,
+        tone,
+        contentLength,
+        includeHashtags,
+        includeImage,
+        imageStyle,
+        additionalInstructions: additionalInstructions.trim() || undefined,
+        outputLocale,
+        bannerWidth: selectedDimension.width,
+        bannerHeight: selectedDimension.height,
+        bannerAspectRatio: selectedDimension.aspectRatio,
+        campaignMode,
+        campaignDimensions: campaignMode ? campaignDimensions : undefined,
+      };
+
       const response = await fetch("/api/generate-post", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          platform,
-          postType,
-          topic,
-          tone,
-          contentLength,
-          includeHashtags,
-          includeImage,
-          imageStyle,
-          additionalInstructions: additionalInstructions.trim() || undefined,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Error al generar la publicación");
+        throw new Error(data.error || "Error al generar el banner");
       }
 
       onPostGenerated(data);
@@ -163,16 +156,39 @@ export function PostGenerator({ onPostGenerated }: PostGeneratorProps) {
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle>Generar Publicación para Redes Sociales</CardTitle>
+        <CardTitle className="flex items-center gap-2">
+          <span>🎨</span>
+          Generar Banner para Redes Sociales
+        </CardTitle>
         <CardDescription>
-          Crea contenido optimizado por plataforma con generación impulsada por
-          IA
+          Crea banners fotorrealistas optimizados por plataforma con IA
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-5">
+        {/* Output Language Selection */}
+        <div className="space-y-2">
+          <Label>{UI_LABELS.outputLanguage} *</Label>
+          <div className="grid grid-cols-3 gap-2">
+            {(Object.keys(LOCALES) as OutputLocale[]).map((locale) => (
+              <button
+                key={locale}
+                onClick={() => setOutputLocale(locale)}
+                className={`p-2.5 rounded-lg border-2 transition-all flex items-center justify-center gap-2 text-sm ${
+                  outputLocale === locale
+                    ? "border-lime-500 bg-linear-to-br from-lime-50 to-cyan-50 shadow-sm font-medium"
+                    : "border-gray-200 hover:border-lime-300 hover:bg-lime-50/50"
+                }`}
+              >
+                <span>{LOCALES[locale].flag}</span>
+                <span>{LOCALES[locale].label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Platform Selection */}
         <div className="space-y-2">
-          <Label>Plataforma *</Label>
+          <Label>{UI_LABELS.platform} *</Label>
           <div className="grid grid-cols-5 gap-2">
             {platforms.map((p) => (
               <button
@@ -195,12 +211,92 @@ export function PostGenerator({ onPostGenerated }: PostGeneratorProps) {
           </div>
         </div>
 
+        {/* Banner Dimensions */}
+        <div className="space-y-2">
+          <Label>{UI_LABELS.bannerDimensions} *</Label>
+          <select
+            value={selectedDimension.label}
+            onChange={(e) => {
+              const dim = BANNER_DIMENSIONS.find(
+                (d) => d.label === e.target.value,
+              );
+              if (dim) setSelectedDimension(dim);
+            }}
+            className="flex h-10 w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm focus:border-lime-400 focus:ring-1 focus:ring-lime-400"
+          >
+            {BANNER_DIMENSIONS.map((dim) => (
+              <option key={dim.label} value={dim.label}>
+                {dim.label} {dim.platform ? `(${dim.platform})` : ""}
+              </option>
+            ))}
+          </select>
+          <div className="flex items-center gap-2 text-xs text-gray-500">
+            <span className="px-2 py-0.5 bg-lime-50 rounded border border-lime-200 text-lime-700">
+              {selectedDimension.width}×{selectedDimension.height} px
+            </span>
+            <span className="px-2 py-0.5 bg-cyan-50 rounded border border-cyan-200 text-cyan-700">
+              {selectedDimension.aspectRatio}
+            </span>
+          </div>
+        </div>
+
+        {/* Campaign Mode Toggle */}
+        <div className="space-y-3">
+          <div className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              id="campaignMode"
+              checked={campaignMode}
+              onChange={(e) => setCampaignMode(e.target.checked)}
+              className="h-4 w-4 text-lime-600 border-gray-300 rounded focus:ring-lime-500"
+            />
+            <Label
+              htmlFor="campaignMode"
+              className="text-sm font-medium text-gray-700 cursor-pointer"
+            >
+              {UI_LABELS.campaignMode}
+            </Label>
+          </div>
+          {campaignMode && (
+            <div className="ml-6 space-y-3 p-3 rounded-lg bg-linear-to-br from-lime-50/50 to-cyan-50/50 border border-lime-200">
+              <p className="text-xs text-gray-600">
+                {UI_LABELS.campaignDescription}
+              </p>
+              {[
+                UI_LABELS.primaryDimension,
+                UI_LABELS.secondaryDimension,
+                UI_LABELS.tertiaryDimension,
+              ].map((dimensionLabel, index) => (
+                <div key={index} className="space-y-1">
+                  <Label className="text-xs">{dimensionLabel}</Label>
+                  <select
+                    value={
+                      campaignDimensions[index]?.label ||
+                      BANNER_DIMENSIONS[0].label
+                    }
+                    onChange={(e) =>
+                      handleCampaignDimensionChange(index, e.target.value)
+                    }
+                    className="flex h-9 w-full rounded-md border border-gray-200 bg-white px-3 py-1 text-xs focus:border-lime-400 focus:ring-1 focus:ring-lime-400"
+                  >
+                    {BANNER_DIMENSIONS.map((dim) => (
+                      <option key={dim.label} value={dim.label}>
+                        {dim.label} {dim.platform ? `(${dim.platform})` : ""}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         {/* Topic Input */}
         <div className="space-y-2">
-          <Label htmlFor="topic">Tema *</Label>
+          <Label htmlFor="topic">{UI_LABELS.topic} *</Label>
           <Input
             id="topic"
-            placeholder="ej., Lanzamiento de producto, Noticias..."
+            placeholder={UI_LABELS.topicPlaceholder}
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
           />
@@ -208,7 +304,7 @@ export function PostGenerator({ onPostGenerated }: PostGeneratorProps) {
 
         {/* Post Type */}
         <div className="space-y-2">
-          <Label htmlFor="postType">Tipo de Publicación *</Label>
+          <Label htmlFor="postType">{UI_LABELS.postType} *</Label>
           <select
             id="postType"
             value={postType}
@@ -217,7 +313,7 @@ export function PostGenerator({ onPostGenerated }: PostGeneratorProps) {
           >
             {postTypes.map((type) => (
               <option key={type} value={type}>
-                {postTypeLabels[type]}
+                {UI_LABELS.postTypeLabels[type]}
               </option>
             ))}
           </select>
@@ -225,7 +321,7 @@ export function PostGenerator({ onPostGenerated }: PostGeneratorProps) {
 
         {/* Tone */}
         <div className="space-y-2">
-          <Label htmlFor="tone">Tono</Label>
+          <Label htmlFor="tone">{UI_LABELS.tone}</Label>
           <select
             id="tone"
             value={tone}
@@ -234,7 +330,7 @@ export function PostGenerator({ onPostGenerated }: PostGeneratorProps) {
           >
             {tones.map((t) => (
               <option key={t} value={t}>
-                {toneLabels[t]}
+                {UI_LABELS.toneLabels[t]}
               </option>
             ))}
           </select>
@@ -242,7 +338,7 @@ export function PostGenerator({ onPostGenerated }: PostGeneratorProps) {
 
         {/* Content Length */}
         <div className="space-y-2">
-          <Label>Longitud del Contenido</Label>
+          <Label>{UI_LABELS.contentLength}</Label>
           <div className="grid grid-cols-3 gap-2">
             {contentLengths.map((length) => (
               <button
@@ -254,7 +350,7 @@ export function PostGenerator({ onPostGenerated }: PostGeneratorProps) {
                     : "border-gray-200 hover:border-lime-300 hover:bg-lime-50/50"
                 }`}
               >
-                {contentLengthLabels[length]}
+                {UI_LABELS.contentLengthLabels[length]}
               </button>
             ))}
           </div>
@@ -274,7 +370,7 @@ export function PostGenerator({ onPostGenerated }: PostGeneratorProps) {
               htmlFor="hashtags"
               className="text-sm font-medium text-gray-700 cursor-pointer"
             >
-              Incluir hashtags
+              {UI_LABELS.includeHashtags}
             </Label>
           </div>
 
@@ -290,13 +386,13 @@ export function PostGenerator({ onPostGenerated }: PostGeneratorProps) {
               htmlFor="image"
               className="text-sm font-medium text-gray-700 cursor-pointer"
             >
-              Generar imagen con IA
+              {UI_LABELS.generateImage}
             </Label>
           </div>
 
           {includeImage && (
             <div className="ml-6 space-y-2">
-              <Label htmlFor="imageStyle">Estilo de Imagen</Label>
+              <Label htmlFor="imageStyle">{UI_LABELS.imageStyle}</Label>
               <select
                 id="imageStyle"
                 value={imageStyle}
@@ -305,7 +401,7 @@ export function PostGenerator({ onPostGenerated }: PostGeneratorProps) {
               >
                 {imageStyles.map((style) => (
                   <option key={style} value={style}>
-                    {imageStyleLabels[style]}
+                    {UI_LABELS.imageStyleLabels[style]}
                   </option>
                 ))}
               </select>
@@ -316,11 +412,11 @@ export function PostGenerator({ onPostGenerated }: PostGeneratorProps) {
         {/* Additional Instructions */}
         <div className="space-y-2">
           <Label htmlFor="instructions">
-            Instrucciones Adicionales (Opcional)
+            {UI_LABELS.additionalInstructions} (Opcional)
           </Label>
           <Textarea
             id="instructions"
-            placeholder="Cualquier requisito o guía específica..."
+            placeholder={UI_LABELS.additionalInstructionsHint}
             value={additionalInstructions}
             onChange={(e) => setAdditionalInstructions(e.target.value)}
             rows={3}
@@ -344,12 +440,20 @@ export function PostGenerator({ onPostGenerated }: PostGeneratorProps) {
           {loading ? (
             <>
               <span className="mr-2 animate-spin">⚡</span>
-              <span className="text-white">Generando Publicación...</span>
+              <span className="text-white">
+                {campaignMode
+                  ? UI_LABELS.creatingCampaign
+                  : UI_LABELS.generatingBanner}
+              </span>
             </>
           ) : (
             <>
               <span className="mr-2">✨</span>
-              <span className="text-white">Generar Publicación</span>
+              <span className="text-white">
+                {campaignMode
+                  ? UI_LABELS.createCampaign
+                  : UI_LABELS.generateBanner}
+              </span>
             </>
           )}
         </Button>

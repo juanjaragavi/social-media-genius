@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
+import { GoogleAnalytics } from "@next/third-parties/google";
+import { Suspense } from "react";
 import "./globals.css";
 
 const poppins = Poppins({
@@ -54,10 +56,15 @@ export default function RootLayout({
           href="https://storage.googleapis.com/media-topfinanzas-com/favicon.png"
         />
       </head>
-      <body className={`${poppins.className} antialiased`}>
-        <div className="min-h-screen bg-linear-to-br from-lime-50 via-cyan-50 to-blue-100">
+      <body className={`${poppins.className} antialiased overflow-hidden`}>
+        <div className="h-screen w-screen overflow-hidden bg-white">
           {children}
         </div>
+        {process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID && (
+          <Suspense fallback={null}>
+            <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID} />
+          </Suspense>
+        )}
       </body>
     </html>
   );

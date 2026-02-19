@@ -52,6 +52,17 @@ export type VideoStyle =
   | "animated"
   | "timelapse";
 
+/** Output locale for generated content */
+export type OutputLocale = "EN" | "ES" | "BR";
+
+/** Banner dimension preset */
+export interface BannerDimensionPreset {
+  label: string;
+  width: number;
+  height: number;
+  aspectRatio: string;
+}
+
 export interface GeneratePostRequest {
   platform: Platform;
   postType: PostType;
@@ -65,6 +76,15 @@ export interface GeneratePostRequest {
   videoStyle?: VideoStyle;
   additionalInstructions?: string;
   sessionId?: string;
+  /** Output language for generated content */
+  outputLocale?: OutputLocale;
+  /** Banner dimensions (width x height) */
+  bannerWidth?: number;
+  bannerHeight?: number;
+  bannerAspectRatio?: string;
+  /** Campaign mode: generate for multiple dimensions */
+  campaignMode?: boolean;
+  campaignDimensions?: BannerDimensionPreset[];
 }
 
 export interface GeneratePostResponse {
