@@ -96,7 +96,8 @@ export const auth = betterAuth({
     google: {
       clientId: process.env.GOOGLE_OAUTH_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_OAUTH_CLIENT_SECRET!,
-      redirectURI: `${baseURL}/api/auth/callback/google`,
+      // Do NOT set redirectURI — Better Auth auto-constructs it from baseURL.
+      // Overriding it causes a silent 500 in the sign-in flow.
     },
   },
   session: {
