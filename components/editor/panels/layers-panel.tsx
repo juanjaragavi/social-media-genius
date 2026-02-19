@@ -6,9 +6,6 @@ import {
   EyeOff,
   Lock,
   Unlock,
-  Trash2,
-  ArrowUp,
-  ArrowDown,
   Image as ImageIcon,
   Type,
   Square,
@@ -57,9 +54,6 @@ export function LayersPanel({
   onSelectLayer,
   onToggleVisibility,
   onToggleLock,
-  onDeleteLayer,
-  onMoveUp,
-  onMoveDown,
 }: LayersPanelProps) {
   if (layers.length === 0) {
     return (
