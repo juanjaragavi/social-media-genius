@@ -48,11 +48,46 @@ const trustedOrigins = [
   (value, index, self) => Boolean(value) && self.indexOf(value) === index,
 );
 
+/**
+ * Resolve the database connection string.
+ *
+ * Priority:
+ *   1. SUPABASE_DB_URL — Supabase pooler (reachable from Vercel serverless)
+ *   2. POSTGRES_URL    — Vercel-convention alias
+ *   3. DATABASE_URL    — Cloud SQL direct IP (works locally, NOT from Vercel)
+ *
+ * On Vercel, Cloud SQL's private IP is unreachable. SUPABASE_DB_URL must be
+ * set to the Supabase connection-pooler URI (Transaction mode, port 6543).
+ */
+const databaseURL =
+  process.env.SUPABASE_DB_URL ||
+  process.env.POSTGRES_URL ||
+  process.env.DATABASE_URL;
+
+if (process.env.VERCEL) {
+  console.log(
+    `[SocialMediaGenius] Auth DB URL source:`,
+    process.env.SUPABASE_DB_URL
+      ? "SUPABASE_DB_URL"
+      : process.env.POSTGRES_URL
+        ? "POSTGRES_URL"
+        : process.env.DATABASE_URL
+          ? "DATABASE_URL"
+          : "⚠️ NONE SET",
+  );
+}
+
 export const auth = betterAuth({
   baseURL,
   trustedOrigins,
   database: new Pool({
-    connectionString: process.env.DATABASE_URL,
+    connectionString: databaseURL,
+    // Vercel functions have 10s default timeout; fail fast instead of hanging
+    connectionTimeoutMillis: 5000,
+    ssl:
+      process.env.VERCEL || databaseURL?.includes("supabase")
+        ? { rejectUnauthorized: false }
+        : undefined,
   }),
   emailAndPassword: {
     enabled: false, // Google-only authentication

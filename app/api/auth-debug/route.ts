@@ -49,11 +49,29 @@ export async function GET() {
   diagnostics.resolvedBaseURL = baseURL;
   diagnostics.redirectURI = `${baseURL}/api/auth/callback/google`;
 
-  // 3. Database connectivity test
+  // 3. Database connectivity - show which URL source is active
+  const dbSource = process.env.SUPABASE_DB_URL
+    ? "SUPABASE_DB_URL"
+    : process.env.POSTGRES_URL
+      ? "POSTGRES_URL"
+      : "DATABASE_URL";
+  const dbURL =
+    process.env.SUPABASE_DB_URL ||
+    process.env.POSTGRES_URL ||
+    process.env.DATABASE_URL;
+
+  diagnostics.databaseSource = dbSource;
+  diagnostics.supabaseDbUrlSet = process.env.SUPABASE_DB_URL
+    ? `✅ set (${process.env.SUPABASE_DB_URL.replace(/:[^@]+@/, ":***@")})`
+    : "❌ NOT SET — Vercel cannot reach Cloud SQL. Set SUPABASE_DB_URL to your Supabase pooler URI.";
+
   try {
     const pool = new Pool({
-      connectionString: process.env.DATABASE_URL,
+      connectionString: dbURL,
       connectionTimeoutMillis: 5000,
+      ssl: dbURL?.includes("supabase")
+        ? { rejectUnauthorized: false }
+        : undefined,
     });
     const result = await pool.query("SELECT NOW() AS server_time");
     diagnostics.database = {
