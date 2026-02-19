@@ -9,23 +9,19 @@ import { createAuthClient } from "better-auth/react";
 /**
  * Resolve the base URL for the auth client.
  *
- * Priority:
- *   1. NEXT_PUBLIC_APP_URL (set explicitly per Vercel environment)
- *   2. Browser origin (runtime detection — works on any deployment)
- *   3. localhost fallback (only hit during SSR in local development)
+ * In the browser we ALWAYS use window.location.origin so the client is
+ * immune to NEXT_PUBLIC_APP_URL being set to localhost in Vercel env vars.
+ * The env var fallback only matters during SSR (where window is undefined).
  */
-const resolveBaseURL = (): string => {
-  if (process.env.NEXT_PUBLIC_APP_URL) {
-    return process.env.NEXT_PUBLIC_APP_URL;
-  }
+function getBaseURL(): string {
   if (typeof window !== "undefined") {
     return window.location.origin;
   }
-  return "http://localhost:3050";
-};
+  return process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3050";
+}
 
 export const authClient = createAuthClient({
-  baseURL: resolveBaseURL(),
+  baseURL: getBaseURL(),
 });
 
 export const { signIn, signOut, useSession } = authClient;
