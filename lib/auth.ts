@@ -19,10 +19,19 @@ import { Pool } from "pg";
  */
 const baseURL =
   process.env.BETTER_AUTH_URL ||
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ||
   process.env.NEXT_PUBLIC_APP_URL ||
-  (process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : "http://localhost:3050");
+  "http://localhost:3050";
+
+// Log resolved URL at module load to help diagnose deployment issues
+if (process.env.VERCEL) {
+  console.log(
+    `[SocialMediaGenius] Auth baseURL resolved to: ${baseURL}`,
+    `| BETTER_AUTH_URL=${process.env.BETTER_AUTH_URL ?? "(unset)"}`,
+    `| VERCEL_URL=${process.env.VERCEL_URL ?? "(unset)"}`,
+    `| NEXT_PUBLIC_APP_URL=${process.env.NEXT_PUBLIC_APP_URL ?? "(unset)"}`,
+  );
+}
 
 /**
  * Trusted origins that Better Auth will accept requests from.
