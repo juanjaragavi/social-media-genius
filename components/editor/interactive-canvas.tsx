@@ -310,12 +310,23 @@ function CanvasShapeElement({
   const shapeRef = useRef<Konva.Shape>(null);
   const trRef = useRef<Konva.Transformer>(null);
 
+  // Re-attach Transformer whenever the element or selection changes so that
+  // property edits from the panel (width, height, fill, etc.) are reflected
+  // immediately on the bounding-box handles.
   useEffect(() => {
     if (isSelected && trRef.current && shapeRef.current) {
       trRef.current.nodes([shapeRef.current]);
       trRef.current.getLayer()?.batchDraw();
     }
-  }, [isSelected]);
+  }, [isSelected, element]);
+
+  // Center-based Konva primitives (Circle, RegularPolygon, Star) render at
+  // their center, but we store element.x / element.y as the top-left corner.
+  // The offset must be applied when reading back positions from Konva nodes.
+  const isCenterBased =
+    element.shapeType === "circle" ||
+    element.shapeType === "triangle" ||
+    element.shapeType === "star";
 
   const commonProps = {
     x: element.x,
@@ -327,7 +338,49 @@ function CanvasShapeElement({
     onClick: onSelect,
     onTap: onSelect,
     onDragEnd: (e: Konva.KonvaEventObject<DragEvent>) => {
-      onChange({ x: e.target.x(), y: e.target.y() });
+      if (isCenterBased) {
+        onChange({
+          x: e.target.x() - element.width / 2,
+          y: e.target.y() - element.height / 2,
+        });
+      } else {
+        onChange({ x: e.target.x(), y: e.target.y() });
+      }
+    },
+    // Live feedback during transform — keeps Ancho/Alto in sync in real time
+    onTransform: () => {
+      const node = shapeRef.current;
+      if (!node) return;
+      const scaleX = node.scaleX();
+      const scaleY = node.scaleY();
+      node.scaleX(1);
+      node.scaleY(1);
+
+      const newWidth = Math.max(20, node.width() * scaleX);
+      const newHeight = Math.max(20, node.height() * scaleY);
+
+      // Write back to the Konva node so the visual doesn't flicker
+      // between scale-reset and the React re-render.
+      node.width(newWidth);
+      node.height(newHeight);
+
+      if (isCenterBased) {
+        onChange({
+          x: node.x() - newWidth / 2,
+          y: node.y() - newHeight / 2,
+          width: newWidth,
+          height: newHeight,
+          rotation: node.rotation(),
+        });
+      } else {
+        onChange({
+          x: node.x(),
+          y: node.y(),
+          width: newWidth,
+          height: newHeight,
+          rotation: node.rotation(),
+        });
+      }
     },
     onTransformEnd: () => {
       const node = shapeRef.current;
@@ -356,13 +409,26 @@ function CanvasShapeElement({
           pathPoints: newPts,
         });
       } else {
-        onChange({
-          x: node.x(),
-          y: node.y(),
-          width: Math.max(20, node.width() * scaleX),
-          height: Math.max(20, node.height() * scaleY),
-          rotation: node.rotation(),
-        });
+        const newWidth = Math.max(20, node.width() * scaleX);
+        const newHeight = Math.max(20, node.height() * scaleY);
+
+        if (isCenterBased) {
+          onChange({
+            x: node.x() - newWidth / 2,
+            y: node.y() - newHeight / 2,
+            width: newWidth,
+            height: newHeight,
+            rotation: node.rotation(),
+          });
+        } else {
+          onChange({
+            x: node.x(),
+            y: node.y(),
+            width: newWidth,
+            height: newHeight,
+            rotation: node.rotation(),
+          });
+        }
       }
     },
   };
@@ -507,8 +573,12 @@ function CanvasShapeElement({
           rotateEnabled
           enabledAnchors={[
             "top-left",
+            "top-center",
             "top-right",
+            "middle-left",
+            "middle-right",
             "bottom-left",
+            "bottom-center",
             "bottom-right",
           ]}
           boundBoxFunc={(_oldBox, newBox) => {

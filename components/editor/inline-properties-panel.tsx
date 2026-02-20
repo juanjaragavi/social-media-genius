@@ -33,6 +33,7 @@ export function InlinePropertiesPanel({ onClose }: { onClose: () => void }) {
 
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showFillPicker, setShowFillPicker] = useState(false);
+  const [showStrokePicker, setShowStrokePicker] = useState(false);
 
   if (!selectedElement) {
     return (
@@ -352,6 +353,7 @@ export function InlinePropertiesPanel({ onClose }: { onClose: () => void }) {
                   onClick={() => {
                     setShowColorPicker(!showColorPicker);
                     setShowFillPicker(false);
+                    setShowStrokePicker(false);
                   }}
                   className="w-8 h-8 rounded border border-gray-300 shadow-sm shrink-0 cursor-pointer"
                   style={{
@@ -395,6 +397,7 @@ export function InlinePropertiesPanel({ onClose }: { onClose: () => void }) {
                   onClick={() => {
                     setShowFillPicker(!showFillPicker);
                     setShowColorPicker(false);
+                    setShowStrokePicker(false);
                   }}
                   className="w-8 h-8 rounded border border-gray-300 shadow-sm shrink-0 cursor-pointer"
                   style={{
@@ -428,16 +431,41 @@ export function InlinePropertiesPanel({ onClose }: { onClose: () => void }) {
 
             <div className="space-y-1">
               <Label className="text-xs text-gray-600">Color de borde</Label>
-              <Input
-                value={(selectedElement as ShapeElement).stroke}
-                onChange={(e) =>
-                  updateElement(selectedElement.id, {
-                    stroke: e.target.value,
-                  } as Partial<ShapeElement>)
-                }
-                className="h-7 text-xs"
-                placeholder="#1d4ed8"
-              />
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    setShowStrokePicker(!showStrokePicker);
+                    setShowFillPicker(false);
+                    setShowColorPicker(false);
+                  }}
+                  className="w-8 h-8 rounded border border-gray-300 shadow-sm shrink-0 cursor-pointer"
+                  style={{
+                    backgroundColor: (selectedElement as ShapeElement).stroke,
+                  }}
+                />
+                <Input
+                  value={(selectedElement as ShapeElement).stroke}
+                  onChange={(e) =>
+                    updateElement(selectedElement.id, {
+                      stroke: e.target.value,
+                    } as Partial<ShapeElement>)
+                  }
+                  className="h-7 text-xs flex-1"
+                  placeholder="#1d4ed8"
+                />
+              </div>
+              {showStrokePicker && (
+                <div className="mt-2">
+                  <HexColorPicker
+                    color={(selectedElement as ShapeElement).stroke}
+                    onChange={(color) =>
+                      updateElement(selectedElement.id, {
+                        stroke: color,
+                      } as Partial<ShapeElement>)
+                    }
+                  />
+                </div>
+              )}
             </div>
 
             <div className="space-y-1">
@@ -453,6 +481,46 @@ export function InlinePropertiesPanel({ onClose }: { onClose: () => void }) {
                 className="h-7 text-xs"
               />
             </div>
+
+            {/* Corner radius — only for rect shapes */}
+            {(selectedElement as ShapeElement).shapeType === "rect" && (
+              <div className="space-y-1">
+                <Label className="text-xs text-gray-600">
+                  Radio de esquina
+                </Label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="range"
+                    min="0"
+                    max={Math.round(
+                      Math.min(
+                        (selectedElement as ShapeElement).width,
+                        (selectedElement as ShapeElement).height,
+                      ) / 2,
+                    )}
+                    step="1"
+                    value={(selectedElement as ShapeElement).cornerRadius || 0}
+                    onChange={(e) =>
+                      updateElement(selectedElement.id, {
+                        cornerRadius: parseInt(e.target.value) || 0,
+                      } as Partial<ShapeElement>)
+                    }
+                    className="flex-1 h-2 accent-blue-500"
+                  />
+                  <Input
+                    type="number"
+                    min="0"
+                    value={(selectedElement as ShapeElement).cornerRadius || 0}
+                    onChange={(e) =>
+                      updateElement(selectedElement.id, {
+                        cornerRadius: parseInt(e.target.value) || 0,
+                      } as Partial<ShapeElement>)
+                    }
+                    className="h-7 text-xs w-16"
+                  />
+                </div>
+              </div>
+            )}
 
             {(selectedElement as ShapeElement).shapeType !== "path" && (
               <div className="pt-2">
