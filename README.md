@@ -8,21 +8,29 @@
 
 ## ✨ Features
 
+- � **Canva-Style Visual Editor**: Full-screen canvas editor with drag, resize, transform, zoom, and keyboard shortcuts (Konva-powered)
 - 🎯 **Platform-Optimized Content**: Generates posts tailored for Instagram, Twitter/X, Facebook, TikTok, and LinkedIn
 - 🤖 **AI-Powered Generation**: Uses Google Gemini 2.5 Flash for intelligent content creation
-- 🎨 **AI Image Generation**: Creates platform-specific images using Imagen 4.0 Ultra
+- 🖼️ **AI Image Generation**: Creates platform-specific images using Imagen 4.0 Ultra
+- 🎥 **AI Video Generation**: Creates videos using Veo 3.1
+- 📝 **AI Canvas Editing**: Edit canvas elements with natural language via Gemini
 - 📊 **2026 Platform Specs**: Up-to-date character limits, hashtag constraints, and media requirements
-- 🌐 **Spanish UI**: Fully localized interface in Spanish
+- 📰 **Campaign Mode**: Generate primary + secondary + tertiary banner sets in one operation
+- 🌐 **Spanish UI / Multilingual Output**: UI in Spanish, AI-generated content in EN, ES, and BR
+- 🔒 **Google OAuth Authentication**: Domain-restricted access (Better Auth 1.x)
 - 💰 **Cost Tracking**: Real-time token usage and cost estimation
 
 ## 🛠️ Tech Stack
 
 - **Framework**: [Next.js 16](https://nextjs.org/) with App Router
-- **Language**: TypeScript
+- **Language**: TypeScript 5
 - **Styling**: Tailwind CSS v4
-- **AI Models**: Google Vertex AI (Gemini 2.5 Flash, Imagen 4.0 Ultra)
+- **Canvas**: react-konva / Konva (2D canvas editor)
+- **AI Models**: Google Vertex AI (Gemini 2.5 Flash, Imagen 4.0 Ultra, Veo 3.1)
+- **Auth**: Better Auth 1.x (Google OAuth)
 - **UI Components**: shadcn/ui
-- **Database**: PostgreSQL with uuid-ossp extension
+- **Database**: PostgreSQL (Supabase on Vercel, Cloud SQL local)
+- **Color Picker**: react-colorful
 
 ## 🚀 Getting Started
 
@@ -71,40 +79,81 @@ This project follows a strict three-tier branch architecture to ensure code qual
 
 **Workflow:** `Feature Branch` → `dev` → `staging` → `main`
 
-## 📁 Project Structure
+## � Git Workflow
+
+All commits and pushes **must** go through the automated workflow script:
+
+```bash
+bash scripts/git-workflow.sh "<commit message>"
+```
+
+Do **not** run raw `git add`, `git commit`, or `git push` commands. The script enforces:
+
+- Conventional commit format
+- Branch protection (main, staging, production)
+- Pre-push validation: TypeScript type-check, ESLint, Prettier
+- Rebase-first strategy with conflict detection
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for full details and available flags.
+
+## �📁 Project Structure
 
 ```bash
 ├── app/
 │   ├── api/
-│   │   ├── generate-post/     # Text content generation
-│   │   ├── generate-image/    # AI image generation
-│   │   ├── generate-video/    # Video generation (Veo 3.1)
-│   │   └── validate-content/  # Content validation
+│   │   ├── generate-post/     # Text + hashtag + banner generation
+│   │   ├── generate-image/    # Imagen 4.0 image generation
+│   │   ├── generate-video/    # Veo 3.1 video generation
+│   │   ├── ai-edit/           # AI-powered canvas editing
+│   │   ├── validate-content/  # Platform constraint validation
+│   │   ├── upload/            # GCS file upload
+│   │   └── auth/[...all]/     # Better Auth handler
+│   ├── login/                 # Login page (Google OAuth)
 │   ├── layout.tsx
 │   └── page.tsx
 ├── components/
-│   ├── post-generator.tsx     # Main form component
-│   ├── post-result.tsx        # Results display
-│   └── ui/                    # shadcn/ui components
+│   ├── editor/                # Canva-style visual editor (primary UI)
+│   │   ├── editor-layout.tsx
+│   │   ├── canvas-context.tsx
+│   │   ├── interactive-canvas.tsx
+│   │   ├── top-toolbar.tsx
+│   │   ├── icon-rail.tsx
+│   │   ├── sidebar-panel.tsx
+│   │   ├── inline-properties-panel.tsx
+│   │   ├── properties-panel.tsx
+│   │   └── panels/            # Generate, Templates, Elements, Text, Media, Layers
+│   ├── banner-editor/         # Legacy monolithic banner editor
+│   ├── post-generator.tsx     # Legacy standalone form
+│   ├── post-result.tsx        # Legacy standalone results
+│   └── ui/                    # shadcn/ui + platform icons
 ├── lib/
-│   ├── services/
-│   │   ├── imagen-service.ts  # Imagen 4.0 integration
-│   │   └── veo-service.ts     # Veo 3.1 integration
-│   ├── social-platform-specs.ts  # Platform constraints
-│   └── social-validators.ts   # Content validation
-└── types/
-    └── social-platforms.ts    # TypeScript definitions
+│   ├── services/              # imagen-service, veo-service, google-drive, supabase
+│   ├── database/              # Schema + service
+│   ├── i18n/                  # Internationalization (EN, ES, BR)
+│   ├── social-platform-specs.ts   # Platform constraints (source of truth)
+│   ├── social-validators.ts      # Content validation
+│   └── auth.ts                # Better Auth server config
+├── types/
+│   ├── social-platforms.ts    # Platform enums and API contracts
+│   ├── generated-post.ts      # Database types
+│   └── editor.ts              # Editor types + BANNER_DIMENSIONS
+├── scripts/
+│   ├── git-workflow.sh        # Automated git workflow (required for all pushes)
+│   └── test-api.ts            # Manual API testing
+└── docs/
+    ├── ui-ux-changelog.md     # UI/UX documentation
+    └── vercel-env-protocol.md # Environment variable protocol
 ```
 
 ## 📋 Platform Specifications (2026)
 
-| Platform  | Max Characters    | Hashtag Limit | Image Aspect Ratio |
-| --------- | ----------------- | ------------- | ------------------ |
-| Instagram | 2,200             | 5             | 3:4 (portrait)     |
-| Twitter/X | 280 (25K Premium) | Unlimited     | 16:9               |
-| Facebook  | 63,206            | 30            | 16:9               |
-| TikTok    | 4,000             | Unlimited     | 9:16               |
-| LinkedIn  | 3,000             | 5             | 16:9               |
+| Platform  | Max Characters    | Hashtag Limit   | Image Aspect Ratio |
+| --------- | ----------------- | --------------- | ------------------ |
+| Instagram | 2,200             | 5               | 4:5 (portrait)     |
+| Twitter/X | 280 (25K Premium) | No strict limit | 16:9               |
+| Facebook  | 63,206            | No strict limit | 1.91:1             |
+| TikTok    | 4,000             | 30              | 9:16               |
+| LinkedIn  | 3,000             | No strict limit | 1.91:1             |
 
 ## 🔗 Related Projects
 

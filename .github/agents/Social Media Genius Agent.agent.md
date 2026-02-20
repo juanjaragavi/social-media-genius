@@ -43,6 +43,35 @@ API routes in `app/api/*/route.ts` follow this pattern:
 4. Parse & validate response against platform limits
 5. Log tokens/cost with emoji-based console logging (🤖 ✅ ⚠️ ❌)
 
+## Branching Strategy & Environments
+
+This project follows a strict three-tier branch architecture to ensure code quality and deployment safety:
+
+- **`dev` (Development)**: The primary branch for all active development. All feature branches, bug fixes, and experimental code must be merged here first. This environment is used for initial testing and integration.
+- **`staging` (Pre-production)**: The release candidate branch. Code is merged from `dev` to `staging` for final QA, user acceptance testing (UAT), and performance validation in an environment that mirrors production.
+- **`main` (Production)**: The stable, production-ready branch. Only thoroughly tested code from `staging` is merged here. Direct commits or pushes to `main` are strictly prohibited.
+
+**Workflow:** `Feature Branch` → `dev` → `staging` → `main`
+
+## Git Workflow
+
+When a user requests to push, commit, sync, or publish local changes to the repository, execute the following command:
+
+```bash
+bash scripts/git-workflow.sh "<commit message>"
+```
+
+Do not run raw `git add`, `git commit`, or `git push` commands directly. All repository operations must go through `scripts/git-workflow.sh`. The script enforces branch protection, pre-push validation (TypeScript type-check, ESLint, Prettier), rebase conflict detection, and conventional commit format. Bypassing it risks pushing type errors, lint failures, or conflicting history to the remote.
+
+Available flags:
+
+- `--branch <name>` — target a specific branch
+- `--force` — enable force-push on non-protected branches (uses `--force-with-lease`)
+- `--verify-build` — run `next build` before pushing
+- `--skip-format` — skip Prettier formatting check
+- `--dry-run` — execute all steps except the final push
+- `--help` — print usage information
+
 ## Development Workflows
 
 ### Environment Setup
@@ -112,11 +141,35 @@ const validation = validateTextContent(platform, content);
 // Returns: { valid, errors, warnings, stats }
 ```
 
-### Component State Management
+### Component Architecture
 
-- Client components use `'use client'` directive (see `components/post-generator.tsx`)
-- State flows: `PostGenerator` → `onPostGenerated` callback → `Home` state → `PostResult`
-- No global state - props drilling for this simple app
+**Canva-Style Visual Editor (Primary UI):**
+
+- **`EditorLayout`** — Top-level composition wrapping `CanvasProvider` context
+- **`TopToolbar`** — Header bar with logo, undo/redo, dimension badges, export button, user session
+- **`IconRail`** — Left vertical sidebar with 6 panel toggles (Generar, Plantillas, Elementos, Texto, Archivos, Capas)
+- **`SidebarPanel`** — 320px animated panel container
+- **`InteractiveCanvas`** — Konva `<Stage>` with drag, resize, transform, zoom, keyboard shortcuts
+- **`InlinePropertiesPanel`** — Right-side context-sensitive element property editor (280px)
+- **`PropertiesPanel`** — Right-side AI generation results display
+
+**Connected Panel Pattern:**
+
+- `ConnectedElementsPanel`, `ConnectedTextPanel`, `ConnectedMediaPanel`, `ConnectedLayersPanel`
+- `GeneratePanel` — AI content generation form
+- `TemplatesPanel` — dimension/aspect-ratio picker
+
+**State Management:**
+
+- **`CanvasProvider` / `useCanvasContext()`** — React Context for all editor state
+- Factory functions: `createTextElement`, `createImageElement`, `createShapeElement`
+- Element types: text, image, shape (rect/circle/triangle/star/line), watermark, sticker
+- Client components use `'use client'` directive
+
+**Legacy Components (still present):**
+
+- `PostGenerator`, `PostResult` — Original standalone card UI
+- `BannerEditor` — Monolithic Konva editor (predecessor)
 
 ### UI Component Pattern
 
@@ -160,18 +213,18 @@ Schema in `lib/database/schema.sql`:
 3. `ImagenService` uses platform aspect ratio from specs (1:1 for Instagram, 16:9 for Twitter, etc.)
 4. Returns base64 data URL or stores in database
 
-## Data Flow Example
+## Data Flow
 
 ```
-User Input (PostGenerator)
+EditorLayout (CanvasProvider)
+  → GeneratePanel form
   → POST /api/generate-post
   → getSystemPrompt(platform) + user prompt
-  → Gemini 2.5 Flash
-  → JSON parse & validate
-  → (optional) POST /api/generate-image
-  → ImagenService.generateImage()
-  → base64 dataUrl
-  → PostResult display
+  → Gemini 2.5 Flash → JSON parse & validate
+  → Banner image rendered on InteractiveCanvas (Konva)
+  → PropertiesPanel displays generation results
+  → (optional) POST /api/generate-image → ImagenService
+  → Export via Konva Stage.toDataURL()
 ```
 
 ## Testing Patterns
@@ -190,9 +243,63 @@ User Input (PostGenerator)
 
 ## File Organization
 
-- `/app`: Next.js App Router pages and API routes
-- `/components`: React components (ui/ subfolder for shadcn)
-- `/lib`: Business logic, services, utilities, database
-- `/types`: TypeScript type definitions
-- `/public`: Static assets
-- `/scripts`: Development/testing utilities
+```bash
+├── app/
+│   ├── api/
+│   │   ├── generate-post/    # Text + hashtag + banner generation
+│   │   ├── generate-image/   # Imagen 4.0 image generation
+│   │   ├── generate-video/   # Veo 3.1 video generation
+│   │   ├── ai-edit/          # AI-powered canvas editing
+│   │   ├── validate-content/ # Platform constraint validation
+│   │   ├── upload/           # GCS file upload
+│   │   └── auth/[...all]/    # Better Auth handler
+│   ├── login/                # Login page (Google OAuth)
+│   ├── layout.tsx
+│   └── page.tsx
+├── components/
+│   ├── editor/               # Canva-style visual editor (primary UI)
+│   │   ├── editor-layout.tsx
+│   │   ├── canvas-context.tsx
+│   │   ├── interactive-canvas.tsx
+│   │   ├── top-toolbar.tsx
+│   │   ├── icon-rail.tsx
+│   │   ├── sidebar-panel.tsx
+│   │   ├── inline-properties-panel.tsx
+│   │   ├── properties-panel.tsx
+│   │   └── panels/           # Connected + presentational panels
+│   ├── banner-editor/        # Legacy monolithic banner editor
+│   ├── post-generator.tsx    # Legacy standalone form
+│   ├── post-result.tsx       # Legacy standalone results
+│   └── ui/                   # shadcn/ui + platform icons
+├── lib/
+│   ├── services/
+│   │   ├── imagen-service.ts
+│   │   ├── veo-service.ts
+│   │   ├── google-drive-service.ts
+│   │   └── supabase-service.ts
+│   ├── database/             # Schema + service
+│   ├── firebase/             # Firebase integration
+│   ├── gcp/                  # GCP utilities
+│   ├── i18n/                 # Internationalization (EN, ES, BR)
+│   ├── storage/              # Storage utilities
+│   ├── auth.ts               # Better Auth server config
+│   ├── auth-client.ts        # Better Auth client config
+│   ├── auth-session.ts       # Server session helper
+│   ├── google-client.ts      # Google Cloud auth
+│   ├── rate-limit.ts         # Supabase rate limiter
+│   ├── social-platform-specs.ts  # Platform constraints (source of truth)
+│   ├── social-validators.ts      # Content validation
+│   └── utils.ts              # cn() and shared utils
+├── types/
+│   ├── social-platforms.ts   # Platform enums and API contracts
+│   ├── generated-post.ts     # Database types
+│   └── editor.ts             # Editor types + BANNER_DIMENSIONS
+├── scripts/
+│   ├── git-workflow.sh       # Automated git workflow (required for all pushes)
+│   ├── 001-auth-and-rate-limiting.sql  # DB setup script
+│   ├── test-api.ts           # Manual API testing
+│   ├── test-setup.ts         # Database initialization
+│   └── vercel-env-manage.sh  # Vercel env management
+└── public/
+    └── images/               # Static assets
+```

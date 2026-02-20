@@ -37,6 +37,25 @@ This project follows a strict three-tier branch architecture to ensure code qual
 
 **Workflow:** `Feature Branch` → `dev` → `staging` → `main`
 
+## Git Workflow
+
+When a user requests to push, commit, sync, or publish local changes to the repository, execute the following command:
+
+```bash
+bash scripts/git-workflow.sh "<commit message>"
+```
+
+Do not run raw `git add`, `git commit`, or `git push` commands directly. All repository operations must go through `scripts/git-workflow.sh`. The script enforces branch protection, pre-push validation (TypeScript type-check, ESLint, Prettier), rebase conflict detection, and conventional commit format. Bypassing it risks pushing type errors, lint failures, or conflicting history to the remote.
+
+Available flags:
+
+- `--branch <name>` — target a specific branch
+- `--force` — enable force-push on non-protected branches (uses `--force-with-lease`)
+- `--verify-build` — run `next build` before pushing
+- `--skip-format` — skip Prettier formatting check
+- `--dry-run` — execute all steps except the final push
+- `--help` — print usage information
+
 ## Architecture
 
 ### Service Layer Pattern
@@ -70,16 +89,30 @@ All API routes in `app/api/*/route.ts` follow this standardized flow:
 4. Parse & validate response against platform limits
 5. Log tokens/cost using emoji-based console logging (🤖 ✅ ⚠️ ❌)
 
+### API Routes
+
+| Route                   | Purpose                                |
+| ----------------------- | -------------------------------------- |
+| `/api/generate-post`    | Text + hashtag + banner generation     |
+| `/api/generate-image`   | Standalone image generation via Imagen |
+| `/api/generate-video`   | Video generation via Veo 3.1           |
+| `/api/ai-edit`          | AI-powered canvas edit via Gemini      |
+| `/api/validate-content` | Platform constraint validation         |
+| `/api/upload`           | File upload to GCS                     |
+| `/api/auth/[...all]`    | Better Auth handler                    |
+
 ### Data Flow
 
 ```text
-User Input (PostGenerator)
+EditorLayout (CanvasProvider)
+  → GeneratePanel form
   → POST /api/generate-post
   → getSystemPrompt(platform) + user prompt
-  → Gemini 2.5 Flash
-  → JSON parse & validate
+  → Gemini 2.5 Flash → JSON parse & validate
+  → Banner image rendered on InteractiveCanvas (Konva)
+  → PropertiesPanel displays generation results
   → (optional) POST /api/generate-image → ImagenService
-  → PostResult display
+  → Export via Konva Stage.toDataURL()
 ```
 
 ## Type System
@@ -103,18 +136,49 @@ Located in `types/social-platforms.ts`:
 
 ## Component Architecture
 
+### Canva-Style Visual Editor (Primary UI)
+
+The application now uses a full-screen, viewport-locked visual editor as its primary interface:
+
+- **`EditorLayout`** — Top-level composition wrapping `CanvasProvider` context
+- **`TopToolbar`** — Header bar with logo, undo/redo, dimension badges, export button, user session
+- **`IconRail`** — Left vertical sidebar with 6 panel toggles (Generar, Plantillas, Elementos, Texto, Archivos, Capas)
+- **`SidebarPanel`** — 320px animated panel container for panel content
+- **`InteractiveCanvas`** — Konva `<Stage>` with drag, resize, transform, zoom, keyboard shortcuts
+- **`InlinePropertiesPanel`** — Right-side context-sensitive element property editor (280px)
+- **`PropertiesPanel`** — Right-side AI generation results display
+
+### Connected Panel Pattern
+
+Sidebar panels use a "connected" pattern separating presentation from canvas integration:
+
+- `ConnectedElementsPanel` — adds shapes/stickers to canvas via `CanvasContext`
+- `ConnectedTextPanel` — inserts text presets (title/subtitle/body) onto canvas
+- `ConnectedMediaPanel` — handles file upload, validation (max 20MB), and image placement
+- `ConnectedLayersPanel` — layer ordering, visibility, and lock management
+- `GeneratePanel` — AI content generation form (platform, tone, type, dimensions)
+- `TemplatesPanel` — dimension/aspect-ratio picker organized by orientation and platform
+
 ### State Management
 
+- **`CanvasProvider` / `useCanvasContext()`** — React Context holding all editor state: elements, selection, canvas size, background, zoom, history, uploaded files
 - Client components use `'use client'` directive
-- State flows: `PostGenerator` → `onPostGenerated` callback → `Home` state → `PostResult`
-- No global state - uses props drilling (appropriate for this app's scope)
+- Factory functions: `createTextElement`, `createImageElement`, `createShapeElement`
+- Element types: text, image, shape (rect/circle/triangle/star/line), watermark, sticker
+
+### Legacy Components (still present, not primary)
+
+- `PostGenerator` — Standalone card-based generation form (original non-editor UI)
+- `PostResult` — Standalone card-based results display
+- `BannerEditor` — Monolithic 1300-line Konva editor (predecessor to modular editor)
 
 ### UI Components
 
-All components in `components/ui/` are from shadcn/ui:
+All shared components in `components/ui/` from shadcn/ui:
 
 - Import from `@/components/ui/button`, `@/components/ui/card`, etc.
 - Use `className` with tailwind-merge via `cn()` utility from `lib/utils.ts`
+- Custom SVG platform icons in `components/ui/platform-icons.tsx`
 
 ## Development Patterns
 
@@ -196,17 +260,31 @@ Follows EmailGenius design system and UI patterns for consistency across TopNetw
 ## File Organization
 
 - `/app`: Next.js App Router pages and API routes
-  - `/app/api/generate-post`: Text content generation
-  - `/app/api/generate-image`: Image generation via Imagen
+  - `/app/api/generate-post`: Text + banner generation
+  - `/app/api/generate-image`: Standalone image generation via Imagen
   - `/app/api/generate-video`: Video generation via Veo
+  - `/app/api/ai-edit`: AI-powered canvas editing
   - `/app/api/validate-content`: Content validation endpoint
-- `/components`: React components (`ui/` subfolder for shadcn components)
+  - `/app/api/upload`: GCS file upload
+  - `/app/api/auth/[...all]`: Better Auth handler
+  - `/app/login`: Login page (Google OAuth)
+- `/components`: React components
+  - `/components/editor/`: Canva-style visual editor (primary UI)
+    - `editor-layout.tsx`, `canvas-context.tsx`, `interactive-canvas.tsx`
+    - `top-toolbar.tsx`, `icon-rail.tsx`, `sidebar-panel.tsx`
+    - `inline-properties-panel.tsx`, `properties-panel.tsx`
+    - `/panels/`: Generate, Templates, Elements, Text, Media, Layers (connected + presentational)
+  - `/components/banner-editor/`: Legacy monolithic banner editor
+  - `/components/ui/`: shadcn/ui components + platform icons
+  - `post-generator.tsx`, `post-result.tsx`: Legacy standalone components
 - `/lib`: Business logic, services, utilities, database
-  - `/lib/services/`: API service classes
-  - `/lib/database/`: Database schema and service
-- `/types`: TypeScript type definitions
+  - `/lib/services/`: imagen-service, veo-service, google-drive-service, supabase-service
+  - `/lib/database/`: Schema + service
+  - `/lib/i18n/`: Internationalization (3 output locales: EN, ES, BR)
+  - `/lib/firebase/`, `/lib/gcp/`, `/lib/storage/`: Infrastructure utilities
+- `/types`: TypeScript type definitions (social-platforms, generated-post, editor)
 - `/public`: Static assets
-- `/scripts`: Development/testing utilities
+- `/scripts`: Git workflow, testing, database setup, Vercel env management
 
 ## Critical Gotchas
 

@@ -14,6 +14,25 @@ This project follows a strict three-tier branch architecture to ensure code qual
 
 **Workflow:** `Feature Branch` → `dev` → `staging` → `main`
 
+## Git Workflow
+
+When a user requests to push, commit, sync, or publish local changes to the repository, execute the following command:
+
+```bash
+bash scripts/git-workflow.sh "<commit message>"
+```
+
+Do not run raw `git add`, `git commit`, or `git push` commands directly. All repository operations must go through `scripts/git-workflow.sh`. The script enforces branch protection, pre-push validation (TypeScript type-check, ESLint, Prettier), rebase conflict detection, and conventional commit format. Bypassing it risks pushing type errors, lint failures, or conflicting history to the remote.
+
+Available flags:
+
+- `--branch <name>` — target a specific branch
+- `--force` — enable force-push on non-protected branches (uses `--force-with-lease`)
+- `--verify-build` — run `next build` before pushing
+- `--skip-format` — skip Prettier formatting check
+- `--dry-run` — execute all steps except the final push
+- `--help` — print usage information
+
 ## Architecture
 
 ### Service Layer Pattern
@@ -116,9 +135,11 @@ const validation = validateTextContent(platform, content);
 
 ### Component State Management
 
-- Client components use `'use client'` directive (see `components/post-generator.tsx`)
-- State flows: `PostGenerator` → `onPostGenerated` callback → `Home` state → `PostResult`
-- No global state - props drilling for this simple app
+- **`CanvasProvider` / `useCanvasContext()`** — React Context holding all editor state: elements, selection, canvas size, background, zoom, history, uploaded files
+- Client components use `'use client'` directive
+- Factory functions: `createTextElement`, `createImageElement`, `createShapeElement`
+- Element types: text, image, shape (rect/circle/triangle/star/line), watermark, sticker
+- Connected panel pattern: `ConnectedElementsPanel`, `ConnectedTextPanel`, `ConnectedMediaPanel`, `ConnectedLayersPanel`
 
 ### UI Component Pattern
 
@@ -165,15 +186,15 @@ Schema in `lib/database/schema.sql`:
 ## Data Flow Example
 
 ```
-User Input (PostGenerator)
+EditorLayout (CanvasProvider)
+  → GeneratePanel form
   → POST /api/generate-post
   → getSystemPrompt(platform) + user prompt
-  → Gemini 2.5 Flash
-  → JSON parse & validate
-  → (optional) POST /api/generate-image
-  → ImagenService.generateImage()
-  → base64 dataUrl
-  → PostResult display
+  → Gemini 2.5 Flash → JSON parse & validate
+  → Banner image rendered on InteractiveCanvas (Konva)
+  → PropertiesPanel displays generation results
+  → (optional) POST /api/generate-image → ImagenService
+  → Export via Konva Stage.toDataURL()
 ```
 
 ## Testing Patterns
@@ -193,8 +214,27 @@ User Input (PostGenerator)
 ## File Organization
 
 - `/app`: Next.js App Router pages and API routes
-- `/components`: React components (ui/ subfolder for shadcn)
+  - `/app/api/generate-post`: Text + banner generation
+  - `/app/api/generate-image`: Standalone image generation via Imagen
+  - `/app/api/generate-video`: Video generation via Veo
+  - `/app/api/ai-edit`: AI-powered canvas editing
+  - `/app/api/validate-content`: Content validation endpoint
+  - `/app/api/upload`: GCS file upload
+  - `/app/api/auth/[...all]`: Better Auth handler
+  - `/app/login`: Login page (Google OAuth)
+- `/components`: React components
+  - `/components/editor/`: Canva-style visual editor (primary UI)
+    - `editor-layout.tsx`, `canvas-context.tsx`, `interactive-canvas.tsx`
+    - `top-toolbar.tsx`, `icon-rail.tsx`, `sidebar-panel.tsx`
+    - `inline-properties-panel.tsx`, `properties-panel.tsx`
+    - `/panels/`: Generate, Templates, Elements, Text, Media, Layers (connected + presentational)
+  - `/components/banner-editor/`: Legacy monolithic banner editor
+  - `/components/ui/`: shadcn/ui components + platform icons
+  - `post-generator.tsx`, `post-result.tsx`: Legacy standalone components
 - `/lib`: Business logic, services, utilities, database
-- `/types`: TypeScript type definitions
+  - `/lib/services/`: imagen-service, veo-service, google-drive-service, supabase-service
+  - `/lib/database/`: Schema + service
+  - `/lib/i18n/`: Internationalization (3 output locales: EN, ES, BR)
+- `/types`: TypeScript type definitions (social-platforms, generated-post, editor)
 - `/public`: Static assets
-- `/scripts`: Development/testing utilities
+- `/scripts`: Git workflow, testing, database setup, Vercel env management
