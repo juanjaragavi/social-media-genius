@@ -36,6 +36,8 @@ interface PostCardProps {
   onRename: (id: string, currentTitle: string) => void;
   onMoveToProject: (id: string) => void;
   onDelete: (id: string) => void;
+  /** Render as a horizontal list row instead of a card */
+  variant?: "grid" | "list";
 }
 
 const platformIconMap: Record<string, React.ReactNode> = {
@@ -72,6 +74,7 @@ export function PostCard({
   onRename,
   onMoveToProject,
   onDelete,
+  variant = "grid",
 }: PostCardProps) {
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -85,6 +88,128 @@ export function PostCard({
     document.addEventListener("mousedown", handle);
     return () => document.removeEventListener("mousedown", handle);
   }, []);
+
+  // ─── List variant ──────────────────────────────────────
+  if (variant === "list") {
+    return (
+      <div className="group relative flex items-center gap-4 rounded-xl border border-gray-200 bg-white hover:border-blue-300 hover:shadow-sm transition-all px-3 py-2.5">
+        {/* Thumbnail */}
+        <button
+          onClick={() => onOpen(id)}
+          className="relative w-12 h-12 rounded-lg bg-gray-100 overflow-hidden shrink-0 cursor-pointer"
+        >
+          {thumbnailUrl ? (
+            <Image
+              src={thumbnailUrl}
+              alt={title}
+              fill
+              className="object-cover"
+              sizes="48px"
+            />
+          ) : (
+            <div className="flex items-center justify-center h-full text-gray-300">
+              <svg
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1}
+                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                />
+              </svg>
+            </div>
+          )}
+        </button>
+
+        {/* Title — full width, no truncation */}
+        <button
+          onClick={() => onOpen(id)}
+          className="flex-1 min-w-0 text-left cursor-pointer"
+        >
+          <h3 className="text-sm font-semibold text-gray-800">{title}</h3>
+        </button>
+
+        {/* Metadata */}
+        <div className="flex items-center gap-2 shrink-0">
+          {platform && (
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-gray-100 rounded text-[10px] font-medium text-gray-600 capitalize">
+              {platformIconMap[platform]}
+              {platform === "twitter" ? "X" : platform}
+            </span>
+          )}
+          {aspectRatio && (
+            <span className="px-1.5 py-0.5 bg-cyan-50 rounded text-[10px] font-medium text-cyan-700 border border-cyan-100">
+              {aspectRatio}
+            </span>
+          )}
+          <span className="flex items-center gap-1 text-[11px] text-gray-400">
+            <Clock className="h-3 w-3" />
+            {relativeTime(updatedAt)}
+          </span>
+        </div>
+
+        {/* Actions */}
+        <div className="relative shrink-0" ref={menuRef}>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowMenu(!showMenu);
+            }}
+            className="p-1 rounded-md border border-gray-200 text-gray-400 hover:bg-gray-50 hover:text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+          >
+            <MoreHorizontal className="h-4 w-4" />
+          </button>
+          {showMenu && (
+            <div className="absolute right-0 top-full mt-1 w-44 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-50">
+              <button
+                onClick={() => {
+                  setShowMenu(false);
+                  onOpen(id);
+                }}
+                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 cursor-pointer"
+              >
+                <ExternalLink className="h-3.5 w-3.5" /> Abrir
+              </button>
+              <button
+                onClick={() => {
+                  setShowMenu(false);
+                  onRename(id, title);
+                }}
+                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 cursor-pointer"
+              >
+                <Pencil className="h-3.5 w-3.5" /> Renombrar
+              </button>
+              <button
+                onClick={() => {
+                  setShowMenu(false);
+                  onMoveToProject(id);
+                }}
+                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 cursor-pointer"
+              >
+                <FolderInput className="h-3.5 w-3.5" /> Mover a proyecto
+              </button>
+              <div className="h-px bg-gray-100 my-1" />
+              <button
+                onClick={() => {
+                  setShowMenu(false);
+                  onDelete(id);
+                }}
+                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-600 hover:bg-red-50 cursor-pointer"
+              >
+                <Trash2 className="h-3.5 w-3.5" /> Eliminar
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // ─── Grid variant (default) ────────────────────────────
 
   return (
     <div className="group relative flex flex-col rounded-xl border border-gray-200 bg-white hover:border-blue-300 hover:shadow-md transition-all overflow-hidden">

@@ -39,6 +39,11 @@ import { useSession, signOut } from "@/lib/auth-client";
 import { PostCard } from "@/components/dashboard/post-card";
 import { ProjectCard } from "@/components/dashboard/project-card";
 import { SearchFilters } from "@/components/dashboard/search-filters";
+import {
+  ViewModeProvider,
+  ViewToggle,
+  useViewMode,
+} from "@/components/dashboard/view-toggle";
 import type { Post, Project } from "@/types/persistence";
 import { BANNER_DIMENSIONS, type BannerDimension } from "@/types/editor";
 import {
@@ -128,6 +133,7 @@ function DashboardContent() {
   const searchParams = useSearchParams();
   const { data: session, isPending } = useSession();
   const [activeNav, setActiveNav] = useState("dashboard");
+  const { viewMode } = useViewMode();
 
   // Data
   const [posts, setPosts] = useState<Post[]>([]);
@@ -448,7 +454,8 @@ function DashboardContent() {
                 {VIEW_TITLES[activeNav] ?? "Dashboard"}
               </h1>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
+              <ViewToggle />
               <Image
                 src="https://storage.googleapis.com/media-topfinanzas-com/images/topnetworks-positivo-sinfondo.webp"
                 alt="TopNetworks"
@@ -482,7 +489,7 @@ function DashboardContent() {
                 </button>
               </div>
 
-              {/* Recent Posts — horizontal scroll row */}
+              {/* Recent Posts */}
               {!hasAnyFilters && recentPosts.length > 0 && (
                 <section>
                   <div className="flex items-center justify-between mb-3">
@@ -499,10 +506,11 @@ function DashboardContent() {
                       </button>
                     )}
                   </div>
-                  <div className="flex gap-4 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-thin">
-                    {recentPosts.map((post) => (
-                      <div key={post.id} className="w-50 shrink-0">
+                  {viewMode === "list" ? (
+                    <div className="flex flex-col gap-2">
+                      {recentPosts.map((post) => (
                         <PostCard
+                          key={post.id}
                           id={post.id}
                           title={post.title}
                           platform={post.platform}
@@ -513,10 +521,30 @@ function DashboardContent() {
                           onRename={handleRenamePost}
                           onMoveToProject={handleMoveToProject}
                           onDelete={handleDeletePost}
+                          variant="list"
                         />
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex gap-4 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-thin">
+                      {recentPosts.map((post) => (
+                        <div key={post.id} className="w-50 shrink-0">
+                          <PostCard
+                            id={post.id}
+                            title={post.title}
+                            platform={post.platform}
+                            aspectRatio={post.aspect_ratio}
+                            thumbnailUrl={post.thumbnail_url}
+                            updatedAt={post.updated_at}
+                            onOpen={handleOpenPost}
+                            onRename={handleRenamePost}
+                            onMoveToProject={handleMoveToProject}
+                            onDelete={handleDeletePost}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </section>
               )}
 
@@ -535,20 +563,38 @@ function DashboardContent() {
                       <ChevronRight className="h-3.5 w-3.5" />
                     </button>
                   </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-                    {projects.map((project) => (
-                      <ProjectCard
-                        key={project.id}
-                        id={project.id}
-                        name={project.name}
-                        postCount={project.post_count ?? 0}
-                        updatedAt={project.updated_at}
-                        onClick={(id) => router.push(`/projects/${id}`)}
-                        onRename={handleRenameProject}
-                        onDelete={handleDeleteProject}
-                      />
-                    ))}
-                  </div>
+                  {viewMode === "list" ? (
+                    <div className="flex flex-col gap-2">
+                      {projects.map((project) => (
+                        <ProjectCard
+                          key={project.id}
+                          id={project.id}
+                          name={project.name}
+                          postCount={project.post_count ?? 0}
+                          updatedAt={project.updated_at}
+                          onClick={(id) => router.push(`/projects/${id}`)}
+                          onRename={handleRenameProject}
+                          onDelete={handleDeleteProject}
+                          variant="list"
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                      {projects.map((project) => (
+                        <ProjectCard
+                          key={project.id}
+                          id={project.id}
+                          name={project.name}
+                          postCount={project.post_count ?? 0}
+                          updatedAt={project.updated_at}
+                          onClick={(id) => router.push(`/projects/${id}`)}
+                          onRename={handleRenameProject}
+                          onDelete={handleDeleteProject}
+                        />
+                      ))}
+                    </div>
+                  )}
                 </section>
               )}
 
@@ -566,23 +612,44 @@ function DashboardContent() {
                     <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
                   </div>
                 ) : posts.length > 0 ? (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-                    {posts.map((post) => (
-                      <PostCard
-                        key={post.id}
-                        id={post.id}
-                        title={post.title}
-                        platform={post.platform}
-                        aspectRatio={post.aspect_ratio}
-                        thumbnailUrl={post.thumbnail_url}
-                        updatedAt={post.updated_at}
-                        onOpen={handleOpenPost}
-                        onRename={handleRenamePost}
-                        onMoveToProject={handleMoveToProject}
-                        onDelete={handleDeletePost}
-                      />
-                    ))}
-                  </div>
+                  viewMode === "list" ? (
+                    <div className="flex flex-col gap-2">
+                      {posts.map((post) => (
+                        <PostCard
+                          key={post.id}
+                          id={post.id}
+                          title={post.title}
+                          platform={post.platform}
+                          aspectRatio={post.aspect_ratio}
+                          thumbnailUrl={post.thumbnail_url}
+                          updatedAt={post.updated_at}
+                          onOpen={handleOpenPost}
+                          onRename={handleRenamePost}
+                          onMoveToProject={handleMoveToProject}
+                          onDelete={handleDeletePost}
+                          variant="list"
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                      {posts.map((post) => (
+                        <PostCard
+                          key={post.id}
+                          id={post.id}
+                          title={post.title}
+                          platform={post.platform}
+                          aspectRatio={post.aspect_ratio}
+                          thumbnailUrl={post.thumbnail_url}
+                          updatedAt={post.updated_at}
+                          onOpen={handleOpenPost}
+                          onRename={handleRenamePost}
+                          onMoveToProject={handleMoveToProject}
+                          onDelete={handleDeletePost}
+                        />
+                      ))}
+                    </div>
+                  )
                 ) : (
                   <div className="flex flex-col items-center justify-center py-16 text-center">
                     <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mb-4">
@@ -631,20 +698,38 @@ function DashboardContent() {
                   <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
                 </div>
               ) : projects.length > 0 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-                  {projects.map((project) => (
-                    <ProjectCard
-                      key={project.id}
-                      id={project.id}
-                      name={project.name}
-                      postCount={project.post_count ?? 0}
-                      updatedAt={project.updated_at}
-                      onClick={(id) => router.push(`/projects/${id}`)}
-                      onRename={handleRenameProject}
-                      onDelete={handleDeleteProject}
-                    />
-                  ))}
-                </div>
+                viewMode === "list" ? (
+                  <div className="flex flex-col gap-2">
+                    {projects.map((project) => (
+                      <ProjectCard
+                        key={project.id}
+                        id={project.id}
+                        name={project.name}
+                        postCount={project.post_count ?? 0}
+                        updatedAt={project.updated_at}
+                        onClick={(id) => router.push(`/projects/${id}`)}
+                        onRename={handleRenameProject}
+                        onDelete={handleDeleteProject}
+                        variant="list"
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                    {projects.map((project) => (
+                      <ProjectCard
+                        key={project.id}
+                        id={project.id}
+                        name={project.name}
+                        postCount={project.post_count ?? 0}
+                        updatedAt={project.updated_at}
+                        onClick={(id) => router.push(`/projects/${id}`)}
+                        onRename={handleRenameProject}
+                        onDelete={handleDeleteProject}
+                      />
+                    ))}
+                  </div>
+                )
               ) : (
                 <div className="flex flex-col items-center justify-center py-16 text-center">
                   <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mb-4">
@@ -686,23 +771,44 @@ function DashboardContent() {
                   <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
                 </div>
               ) : recentPosts.length > 0 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-                  {recentPosts.map((post) => (
-                    <PostCard
-                      key={post.id}
-                      id={post.id}
-                      title={post.title}
-                      platform={post.platform}
-                      aspectRatio={post.aspect_ratio}
-                      thumbnailUrl={post.thumbnail_url}
-                      updatedAt={post.updated_at}
-                      onOpen={handleOpenPost}
-                      onRename={handleRenamePost}
-                      onMoveToProject={handleMoveToProject}
-                      onDelete={handleDeletePost}
-                    />
-                  ))}
-                </div>
+                viewMode === "list" ? (
+                  <div className="flex flex-col gap-2">
+                    {recentPosts.map((post) => (
+                      <PostCard
+                        key={post.id}
+                        id={post.id}
+                        title={post.title}
+                        platform={post.platform}
+                        aspectRatio={post.aspect_ratio}
+                        thumbnailUrl={post.thumbnail_url}
+                        updatedAt={post.updated_at}
+                        onOpen={handleOpenPost}
+                        onRename={handleRenamePost}
+                        onMoveToProject={handleMoveToProject}
+                        onDelete={handleDeletePost}
+                        variant="list"
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                    {recentPosts.map((post) => (
+                      <PostCard
+                        key={post.id}
+                        id={post.id}
+                        title={post.title}
+                        platform={post.platform}
+                        aspectRatio={post.aspect_ratio}
+                        thumbnailUrl={post.thumbnail_url}
+                        updatedAt={post.updated_at}
+                        onOpen={handleOpenPost}
+                        onRename={handleRenamePost}
+                        onMoveToProject={handleMoveToProject}
+                        onDelete={handleDeletePost}
+                      />
+                    ))}
+                  </div>
+                )
               ) : (
                 <div className="flex flex-col items-center justify-center py-16 text-center">
                   <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mb-4">
@@ -879,7 +985,9 @@ export default function DashboardPage() {
         </div>
       }
     >
-      <DashboardContent />
+      <ViewModeProvider>
+        <DashboardContent />
+      </ViewModeProvider>
     </Suspense>
   );
 }

@@ -60,7 +60,13 @@ const InteractiveCanvas = dynamic(
   },
 );
 
-function EditorContent({ postId }: { postId?: string }) {
+function EditorContent({
+  postId,
+  initialPost,
+}: {
+  postId?: string;
+  initialPost?: Post | null;
+}) {
   const {
     state,
     setCanvasSize,
@@ -81,21 +87,32 @@ function EditorContent({ postId }: { postId?: string }) {
 
   // ─── Post title (inline rename) ──────────────────────────
   const [postTitle, setPostTitle] = useState<string | undefined>(
-    postId ? "" : undefined,
+    postId ? (initialPost?.title ?? "") : undefined,
   );
 
-  // Fetch initial title once when postId is present
+  // Sync title when initialPost loads asynchronously (page-level fetch)
+  const titleSynced = useRef(false);
+  useEffect(() => {
+    if (!postId || titleSynced.current) return;
+    if (initialPost?.title) {
+      setPostTitle(initialPost.title);
+      titleSynced.current = true;
+    }
+  }, [postId, initialPost]);
+
+  // Fallback: fetch title if initialPost was not provided
   const titleFetched = useRef(false);
   useEffect(() => {
-    if (!postId || titleFetched.current) return;
+    if (!postId || titleFetched.current || initialPost?.title) return;
     titleFetched.current = true;
     fetch(`/api/posts/${postId}`)
       .then((r) => r.json())
-      .then((data: { title?: string }) => {
-        if (data.title) setPostTitle(data.title);
+      .then((data: { post?: { title?: string }; title?: string }) => {
+        const title = data.post?.title ?? data.title;
+        if (title) setPostTitle(title);
       })
       .catch(() => {});
-  }, [postId]);
+  }, [postId, initialPost]);
 
   const handlePostTitleChange = useCallback(
     async (newTitle: string) => {
@@ -520,7 +537,7 @@ export function EditorLayout({ postId, initialPost }: EditorLayoutProps = {}) {
       initialHeight={initialHeight}
       initialCanvasState={initialPost?.canvas_state ?? null}
     >
-      <EditorContent postId={postId} />
+      <EditorContent postId={postId} initialPost={initialPost} />
     </CanvasProvider>
   );
 }
