@@ -153,6 +153,72 @@ export async function GET(req: Request) {
       ?.socialProviders,
   };
 
+  // Test 5: Validate Google OAuth credentials by calling Google's token endpoint
+  // with a dummy code. Google will reply:
+  //   - "invalid_client" → client_id or client_secret is wrong
+  //   - "invalid_grant"  → credentials are valid, code is just fake (expected)
+  //   - "redirect_uri_mismatch" → redirect_uri not registered
+  const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_OAUTH_CLIENT_SECRET;
+  const constructedRedirectUri = `${baseURL}/api/auth/callback/google`;
+
+  results.oauthCredentials = {
+    clientIdSet: !!clientId,
+    clientIdFormat: clientId?.endsWith(".apps.googleusercontent.com")
+      ? "valid"
+      : "INVALID FORMAT",
+    clientIdValue: clientId?.slice(0, 20) + "...",
+    clientSecretSet: !!clientSecret,
+    clientSecretLength: clientSecret?.length ?? 0,
+    clientSecretPrefix: clientSecret?.slice(0, 7) ?? "(unset)",
+    clientSecretHasWhitespace:
+      clientSecret !== clientSecret?.trim() ? "YES — HAS LEADING/TRAILING WHITESPACE" : "clean",
+    constructedRedirectUri,
+  };
+
+  try {
+    const tokenTestParams = new URLSearchParams({
+      code: "DUMMY_CODE_FOR_CREDENTIAL_VALIDATION",
+      client_id: clientId || "",
+      client_secret: clientSecret || "",
+      redirect_uri: constructedRedirectUri,
+      grant_type: "authorization_code",
+    });
+    const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: tokenTestParams.toString(),
+    });
+    const tokenBody = await tokenRes.json();
+    results.googleTokenExchangeTest = {
+      status: tokenRes.status,
+      error: tokenBody.error,
+      errorDescription: tokenBody.error_description,
+      interpretation:
+        tokenBody.error === "invalid_grant"
+          ? "✅ Credentials are VALID (dummy code expected to fail with invalid_grant)"
+          : tokenBody.error === "invalid_client"
+            ? "❌ Client ID or Client Secret is WRONG"
+            : tokenBody.error === "redirect_uri_mismatch"
+              ? "❌ Redirect URI not registered in GCP Console"
+              : `⚠️ Unexpected error: ${tokenBody.error}`,
+    };
+  } catch (err: unknown) {
+    results.googleTokenExchangeTest = {
+      error: "fetch_failed",
+      message: err instanceof Error ? err.message : String(err),
+    };
+  }
+
+  // Test 6: Check BETTER_AUTH_SECRET consistency
+  results.secretCheck = {
+    betterAuthSecretSet: !!process.env.BETTER_AUTH_SECRET,
+    authSecretSet: !!process.env.AUTH_SECRET,
+    secretLength: (process.env.BETTER_AUTH_SECRET || process.env.AUTH_SECRET)?.length ?? 0,
+    nodeEnv: process.env.NODE_ENV,
+    vercel: !!process.env.VERCEL,
+  };
+
   return NextResponse.json(results, {
     status: 200,
     headers: { "Content-Type": "application/json" },
