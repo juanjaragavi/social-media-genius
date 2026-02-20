@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useCallback } from "react";
+import React, { useMemo, useCallback, useState } from "react";
 import {
   Eye,
   EyeOff,
@@ -32,15 +32,21 @@ function getLayerIcon(type: string) {
 /**
  * ConnectedLayersPanel maps the shared canvas context elements
  * to the layers panel UI, allowing selection, visibility toggle,
- * lock/unlock, and reordering.
+ * lock/unlock, and drag-and-drop reordering.
  */
 export function ConnectedLayersPanel() {
-  const { state, selectElement, updateElement } = useCanvasContext();
+  const { state, selectElement, updateElement, reorderElements } =
+    useCanvasContext();
+
+  // Drag-and-drop state for layer reordering
+  const [dragLayerIdx, setDragLayerIdx] = useState<number | null>(null);
+  const [dropTargetIdx, setDropTargetIdx] = useState<number | null>(null);
 
   // We display layers from top (highest z-index) to bottom
+  // reversedLayers[i] maps to state.elements[elements.length - 1 - i]
   const layers = useMemo(
     () =>
-      [...state.elements].reverse().map((el) => ({
+      [...state.elements].reverse().map((el, displayIdx) => ({
         id: el.id,
         name: el.name,
         type: el.type as "image" | "text" | "shape" | "watermark",
@@ -48,6 +54,8 @@ export function ConnectedLayersPanel() {
         locked: el.locked,
         thumbnail:
           el.type === "image" ? (el as { src: string }).src : undefined,
+        // The real index in state.elements (reversed display order)
+        realIndex: state.elements.length - 1 - displayIdx,
       })),
     [state.elements],
   );
@@ -66,6 +74,60 @@ export function ConnectedLayersPanel() {
       if (el) updateElement(id, { locked: !el.locked });
     },
     [state.elements, updateElement],
+  );
+
+  // ── Drag-and-drop handlers for layer reordering ──
+  const handleLayerDragStart = useCallback(
+    (e: React.DragEvent, displayIdx: number) => {
+      setDragLayerIdx(displayIdx);
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("text/plain", String(displayIdx));
+      // Make the drag image slightly transparent
+      if (e.currentTarget instanceof HTMLElement) {
+        e.currentTarget.style.opacity = "0.5";
+      }
+    },
+    [],
+  );
+
+  const handleLayerDragEnd = useCallback((e: React.DragEvent) => {
+    if (e.currentTarget instanceof HTMLElement) {
+      e.currentTarget.style.opacity = "1";
+    }
+    setDragLayerIdx(null);
+    setDropTargetIdx(null);
+  }, []);
+
+  const handleLayerDragOver = useCallback(
+    (e: React.DragEvent, displayIdx: number) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+      setDropTargetIdx(displayIdx);
+    },
+    [],
+  );
+
+  const handleLayerDrop = useCallback(
+    (e: React.DragEvent, targetDisplayIdx: number) => {
+      e.preventDefault();
+      if (dragLayerIdx === null || dragLayerIdx === targetDisplayIdx) {
+        setDragLayerIdx(null);
+        setDropTargetIdx(null);
+        return;
+      }
+
+      // Convert display indices (reversed) back to real element array indices
+      const fromReal = layers[dragLayerIdx]?.realIndex;
+      const toReal = layers[targetDisplayIdx]?.realIndex;
+
+      if (fromReal !== undefined && toReal !== undefined) {
+        reorderElements(fromReal, toReal);
+      }
+
+      setDragLayerIdx(null);
+      setDropTargetIdx(null);
+    },
+    [dragLayerIdx, layers, reorderElements],
   );
 
   if (layers.length === 0) {
@@ -105,13 +167,21 @@ export function ConnectedLayersPanel() {
 
       {/* Layer list */}
       <div className="space-y-0.5">
-        {layers.map((layer) => {
+        {layers.map((layer, displayIdx) => {
           const isSelected = state.selectedElementId === layer.id;
+          const isDragTarget =
+            dropTargetIdx === displayIdx && dragLayerIdx !== displayIdx;
           return (
             <div
               key={layer.id}
-              className={`editor-layer-item ${isSelected ? "active" : ""}`}
+              className={`editor-layer-item ${isSelected ? "active" : ""} ${isDragTarget ? "ring-2 ring-blue-400 bg-blue-50" : ""}`}
               onClick={() => selectElement(layer.id)}
+              draggable
+              onDragStart={(e) => handleLayerDragStart(e, displayIdx)}
+              onDragEnd={handleLayerDragEnd}
+              onDragOver={(e) => handleLayerDragOver(e, displayIdx)}
+              onDrop={(e) => handleLayerDrop(e, displayIdx)}
+              data-layer-item
             >
               {/* Drag handle */}
               <div className="editor-layer-grip">
@@ -155,7 +225,7 @@ export function ConnectedLayersPanel() {
                     e.stopPropagation();
                     handleToggleVisibility(layer.id);
                   }}
-                  className="p-0.5 rounded hover:bg-gray-200 text-gray-400"
+                  className="p-0.5 rounded hover:bg-gray-200 text-gray-400 cursor-pointer"
                   title={layer.visible ? "Ocultar" : "Mostrar"}
                 >
                   {layer.visible ? (
@@ -169,7 +239,7 @@ export function ConnectedLayersPanel() {
                     e.stopPropagation();
                     handleToggleLock(layer.id);
                   }}
-                  className="p-0.5 rounded hover:bg-gray-200 text-gray-400"
+                  className="p-0.5 rounded hover:bg-gray-200 text-gray-400 cursor-pointer"
                   title={layer.locked ? "Desbloquear" : "Bloquear"}
                 >
                   {layer.locked ? (

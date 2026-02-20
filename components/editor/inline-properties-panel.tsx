@@ -41,7 +41,7 @@ export function InlinePropertiesPanel({ onClose }: { onClose: () => void }) {
           <h3 className="text-sm font-semibold text-gray-800">Propiedades</h3>
           <button
             onClick={onClose}
-            className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+            className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
           >
             <X className="h-4 w-4" />
           </button>
@@ -62,7 +62,7 @@ export function InlinePropertiesPanel({ onClose }: { onClose: () => void }) {
         <h3 className="text-sm font-semibold text-gray-800">Propiedades</h3>
         <button
           onClick={onClose}
-          className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+          className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
         >
           <X className="h-4 w-4" />
         </button>
@@ -251,7 +251,7 @@ export function InlinePropertiesPanel({ onClose }: { onClose: () => void }) {
                         : "bold",
                   } as Partial<TextElement>)
                 }
-                className={`p-1.5 rounded ${(selectedElement as TextElement).fontWeight === "bold" ? "bg-lime-100 text-lime-700" : "hover:bg-gray-100 text-gray-600"}`}
+                className={`p-1.5 rounded cursor-pointer ${(selectedElement as TextElement).fontWeight === "bold" ? "bg-lime-100 text-lime-700" : "hover:bg-gray-100 text-gray-600"}`}
               >
                 <Bold className="h-3.5 w-3.5" />
               </button>
@@ -264,7 +264,7 @@ export function InlinePropertiesPanel({ onClose }: { onClose: () => void }) {
                         : "italic",
                   } as Partial<TextElement>)
                 }
-                className={`p-1.5 rounded ${(selectedElement as TextElement).fontStyle === "italic" ? "bg-lime-100 text-lime-700" : "hover:bg-gray-100 text-gray-600"}`}
+                className={`p-1.5 rounded cursor-pointer ${(selectedElement as TextElement).fontStyle === "italic" ? "bg-lime-100 text-lime-700" : "hover:bg-gray-100 text-gray-600"}`}
               >
                 <Italic className="h-3.5 w-3.5" />
               </button>
@@ -278,7 +278,7 @@ export function InlinePropertiesPanel({ onClose }: { onClose: () => void }) {
                         : "underline",
                   } as Partial<TextElement>)
                 }
-                className={`p-1.5 rounded ${(selectedElement as TextElement).textDecoration === "underline" ? "bg-lime-100 text-lime-700" : "hover:bg-gray-100 text-gray-600"}`}
+                className={`p-1.5 rounded cursor-pointer ${(selectedElement as TextElement).textDecoration === "underline" ? "bg-lime-100 text-lime-700" : "hover:bg-gray-100 text-gray-600"}`}
               >
                 <Underline className="h-3.5 w-3.5" />
               </button>
@@ -298,7 +298,7 @@ export function InlinePropertiesPanel({ onClose }: { onClose: () => void }) {
                         align,
                       } as Partial<TextElement>)
                     }
-                    className={`p-1.5 rounded ${(selectedElement as TextElement).align === align ? "bg-lime-100 text-lime-700" : "hover:bg-gray-100 text-gray-600"}`}
+                    className={`p-1.5 rounded cursor-pointer ${(selectedElement as TextElement).align === align ? "bg-lime-100 text-lime-700" : "hover:bg-gray-100 text-gray-600"}`}
                   >
                     <Icon className="h-3.5 w-3.5" />
                   </button>
@@ -317,7 +317,7 @@ export function InlinePropertiesPanel({ onClose }: { onClose: () => void }) {
                     setShowColorPicker(!showColorPicker);
                     setShowFillPicker(false);
                   }}
-                  className="w-8 h-8 rounded border border-gray-300 shadow-sm shrink-0"
+                  className="w-8 h-8 rounded border border-gray-300 shadow-sm shrink-0 cursor-pointer"
                   style={{
                     backgroundColor: (selectedElement as TextElement).fill,
                   }}
@@ -360,7 +360,7 @@ export function InlinePropertiesPanel({ onClose }: { onClose: () => void }) {
                     setShowFillPicker(!showFillPicker);
                     setShowColorPicker(false);
                   }}
-                  className="w-8 h-8 rounded border border-gray-300 shadow-sm shrink-0"
+                  className="w-8 h-8 rounded border border-gray-300 shadow-sm shrink-0 cursor-pointer"
                   style={{
                     backgroundColor: (selectedElement as ShapeElement).fill,
                   }}
@@ -424,21 +424,21 @@ export function InlinePropertiesPanel({ onClose }: { onClose: () => void }) {
         <div className="flex items-center gap-1 border-t border-gray-200 pt-2">
           <button
             onClick={() => duplicateElement(selectedElement.id)}
-            className="p-1.5 rounded hover:bg-gray-100 text-gray-600"
+            className="p-1.5 rounded hover:bg-gray-100 text-gray-600 cursor-pointer"
             title="Duplicar"
           >
             <Copy className="h-3.5 w-3.5" />
           </button>
           <button
             onClick={() => moveElement(selectedElement.id, "up")}
-            className="p-1.5 rounded hover:bg-gray-100 text-gray-600"
+            className="p-1.5 rounded hover:bg-gray-100 text-gray-600 cursor-pointer"
             title="Adelante"
           >
             <ArrowUp className="h-3.5 w-3.5" />
           </button>
           <button
             onClick={() => moveElement(selectedElement.id, "down")}
-            className="p-1.5 rounded hover:bg-gray-100 text-gray-600"
+            className="p-1.5 rounded hover:bg-gray-100 text-gray-600 cursor-pointer"
             title="Atrás"
           >
             <ArrowDown className="h-3.5 w-3.5" />
@@ -446,7 +446,7 @@ export function InlinePropertiesPanel({ onClose }: { onClose: () => void }) {
           <div className="flex-1" />
           <button
             onClick={() => deleteElement(selectedElement.id)}
-            className="p-1.5 rounded hover:bg-red-50 text-red-500"
+            className="p-1.5 rounded hover:bg-red-50 text-red-500 cursor-pointer"
             title="Eliminar"
           >
             <Trash2 className="h-3.5 w-3.5" />

@@ -18,7 +18,8 @@ import {
 /**
  * ConnectedElementsPanel wraps the elements sidebar and connects it
  * to the shared CanvasContext so that clicking a shape/element
- * actually adds it to the interactive canvas.
+ * actually adds it to the interactive canvas. Items are also draggable
+ * onto the canvas to drop at a specific position.
  */
 
 const SHAPE_MAP: Record<string, ShapeElement["shapeType"]> = {
@@ -42,6 +43,20 @@ export function ConnectedElementsPanel() {
     [addShape],
   );
 
+  /** Serialize element info for drag-and-drop onto the canvas */
+  const handleDragStart = useCallback(
+    (
+      e: React.DragEvent,
+      elementType: string,
+      meta?: Record<string, string>,
+    ) => {
+      const payload = JSON.stringify({ elementType, ...meta });
+      e.dataTransfer.setData("application/x-editor-element", payload);
+      e.dataTransfer.effectAllowed = "copy";
+    },
+    [],
+  );
+
   return (
     <div className="space-y-4">
       {/* Search */}
@@ -55,43 +70,63 @@ export function ConnectedElementsPanel() {
 
       {/* Category quick-access grid */}
       <div className="grid grid-cols-3 gap-2">
-        {[
-          {
-            icon: Shapes,
-            label: "Formas",
-            action: () => addShape("rect"),
-          },
-          {
-            icon: ImageIcon,
-            label: "Fotos",
-            action: () => {},
-          },
-          {
-            icon: Sticker,
-            label: "Stickers",
-            action: () => {},
-          },
-          {
-            icon: Smile,
-            label: "Emojis",
-            action: () => addText("body"),
-          },
-          {
-            icon: Square,
-            label: "Marcos",
-            action: () => addShape("rect"),
-          },
-          {
-            icon: Star,
-            label: "Íconos",
-            action: () => addShape("star"),
-          },
-        ].map((cat) => {
+        {(
+          [
+            {
+              icon: Shapes,
+              label: "Formas",
+              action: () => addShape("rect"),
+              dragType: "shape",
+              dragMeta: { shapeType: "rect" } as Record<string, string>,
+            },
+            {
+              icon: ImageIcon,
+              label: "Fotos",
+              action: () => {},
+              dragType: "",
+              dragMeta: {} as Record<string, string>,
+            },
+            {
+              icon: Sticker,
+              label: "Stickers",
+              action: () => {},
+              dragType: "",
+              dragMeta: {} as Record<string, string>,
+            },
+            {
+              icon: Smile,
+              label: "Emojis",
+              action: () => addText("body"),
+              dragType: "text",
+              dragMeta: { preset: "body" } as Record<string, string>,
+            },
+            {
+              icon: Square,
+              label: "Marcos",
+              action: () => addShape("rect"),
+              dragType: "shape",
+              dragMeta: { shapeType: "rect" } as Record<string, string>,
+            },
+            {
+              icon: Star,
+              label: "Íconos",
+              action: () => addShape("star"),
+              dragType: "shape",
+              dragMeta: { shapeType: "star" } as Record<string, string>,
+            },
+          ] as const
+        ).map((cat) => {
           const Icon = cat.icon;
           return (
             <button
               key={cat.label}
               onClick={cat.action}
+              draggable={!!cat.dragType}
+              onDragStart={(e) =>
+                cat.dragType
+                  ? handleDragStart(e, cat.dragType, cat.dragMeta)
+                  : undefined
+              }
               className="flex flex-col items-center gap-1.5 p-3 rounded-lg bg-gray-50 hover:bg-gray-100 border border-gray-100 hover:border-gray-200 transition-colors cursor-pointer"
             >
               <div className="w-10 h-10 rounded-lg bg-white shadow-sm flex items-center justify-center">
@@ -125,6 +160,12 @@ export function ConnectedElementsPanel() {
               <button
                 key={item.name}
                 onClick={() => handleShapeClick(item.name)}
+                draggable
+                onDragStart={(e) =>
+                  handleDragStart(e, "shape", {
+                    shapeType: SHAPE_MAP[item.name] || "rect",
+                  })
+                }
                 className="aspect-square rounded-lg bg-gray-50 hover:bg-blue-50 border border-gray-100 hover:border-blue-200 flex items-center justify-center transition-colors cursor-pointer group"
                 title={item.name}
               >

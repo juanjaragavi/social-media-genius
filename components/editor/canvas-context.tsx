@@ -110,6 +110,7 @@ interface CanvasContextType {
   duplicateElement: (id: string) => void;
   moveElement: (id: string, direction: "up" | "down") => void;
   selectElement: (id: string | null) => void;
+  reorderElements: (fromIndex: number, toIndex: number) => void;
   // Convenience adders
   addText: (preset?: "title" | "subtitle" | "body") => void;
   addImage: (src: string, name?: string) => void;
@@ -225,6 +226,23 @@ export function CanvasProvider({
       if (newIdx < 0 || newIdx >= prev.elements.length) return prev;
       const els = [...prev.elements];
       [els[idx], els[newIdx]] = [els[newIdx], els[idx]];
+      return { ...prev, elements: els };
+    });
+  }, []);
+
+  const reorderElements = useCallback((fromIndex: number, toIndex: number) => {
+    setState((prev) => {
+      if (
+        fromIndex < 0 ||
+        fromIndex >= prev.elements.length ||
+        toIndex < 0 ||
+        toIndex >= prev.elements.length ||
+        fromIndex === toIndex
+      )
+        return prev;
+      const els = [...prev.elements];
+      const [moved] = els.splice(fromIndex, 1);
+      els.splice(toIndex, 0, moved);
       return { ...prev, elements: els };
     });
   }, []);
@@ -349,6 +367,7 @@ export function CanvasProvider({
         duplicateElement,
         moveElement,
         selectElement,
+        reorderElements,
         addText,
         addImage,
         addShape,

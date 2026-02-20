@@ -42,7 +42,7 @@ const InteractiveCanvas = dynamic(
 );
 
 function EditorContent() {
-  const { setCanvasSize, setBackgroundImage, selectedElement } =
+  const { setCanvasSize, setBackgroundImage, selectedElement, selectElement } =
     useCanvasContext();
 
   // Sidebar state
@@ -180,11 +180,7 @@ function EditorContent() {
 
         {/* Right panel: element properties when selected, or generation results */}
         {selectedElement ? (
-          <InlinePropertiesPanel
-            onClose={() => {
-              /* keep panel visible while element selected */
-            }}
-          />
+          <InlinePropertiesPanel onClose={() => selectElement(null)} />
         ) : showGenerationResult && generatedPost ? (
           <PropertiesPanel
             generatedPost={generatedPost}

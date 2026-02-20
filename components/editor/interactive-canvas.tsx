@@ -24,6 +24,8 @@ import { ZoomIn, ZoomOut, Maximize2 } from "lucide-react";
 import {
   useCanvasContext,
   createImageElement as createImageElementFn,
+  createShapeElement as createShapeElementFn,
+  createTextElement as createTextElementFn,
 } from "./canvas-context";
 import type {
   AnyEditorElement,
@@ -432,28 +434,105 @@ export function InteractiveCanvas() {
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault();
+
+      // Helper: compute canvas-relative coords from a client mouse position
+      const getCanvasCoords = () => {
+        const stageNode = stageRef.current;
+        if (!stageNode) return { x: 100, y: 100 };
+        const stageBox = stageNode.container().getBoundingClientRect();
+        return {
+          x: (e.clientX - stageBox.left) / scale,
+          y: (e.clientY - stageBox.top) / scale,
+        };
+      };
+
+      // 1. Handle editor element drops (shapes, text from the Elements panel)
+      const editorPayload = e.dataTransfer.getData(
+        "application/x-editor-element",
+      );
+      if (editorPayload) {
+        try {
+          const data = JSON.parse(editorPayload) as {
+            elementType: string;
+            shapeType?: string;
+            preset?: string;
+          };
+          const { x, y } = getCanvasCoords();
+          const { addElement } = canvasCtxRef.current;
+
+          if (data.elementType === "shape" && data.shapeType) {
+            addElement(
+              createShapeElementFn(
+                data.shapeType as ShapeElement["shapeType"],
+                {
+                  x: Math.max(0, x - 100),
+                  y: Math.max(0, y - 100),
+                },
+              ),
+            );
+          } else if (data.elementType === "text") {
+            const presets: Record<
+              string,
+              {
+                text: string;
+                fontSize: number;
+                fontWeight: "bold" | "normal";
+                name: string;
+              }
+            > = {
+              title: {
+                text: "Título",
+                fontSize: 48,
+                fontWeight: "bold",
+                name: "Título",
+              },
+              subtitle: {
+                text: "Subtítulo",
+                fontSize: 32,
+                fontWeight: "bold",
+                name: "Subtítulo",
+              },
+              body: {
+                text: "Texto de cuerpo",
+                fontSize: 18,
+                fontWeight: "normal",
+                name: "Texto",
+              },
+            };
+            const p = presets[data.preset || "body"] || presets.body;
+            addElement(
+              createTextElementFn({
+                ...p,
+                x: Math.max(0, x - 150),
+                y: Math.max(0, y - 30),
+              }),
+            );
+          }
+          return; // handled
+        } catch {
+          // fallthrough to other handlers
+        }
+      }
+
+      // 2. Handle data URL drops (images from media panel)
       const dataUrl = e.dataTransfer.getData("text/plain");
       const name = e.dataTransfer.getData("text/name") || "Imagen";
       if (dataUrl && dataUrl.startsWith("data:")) {
-        // Calculate drop position relative to canvas
-        const stageNode = stageRef.current;
-        if (stageNode) {
-          const stageBox = stageNode.container().getBoundingClientRect();
-          const x = (e.clientX - stageBox.left) / scale;
-          const y = (e.clientY - stageBox.top) / scale;
-          const { addElement } = canvasCtxRef.current;
-          addElement(
-            createImageElementFn(dataUrl, {
-              x: Math.max(0, x - 100),
-              y: Math.max(0, y - 100),
-              width: 200,
-              height: 200,
-              name,
-            }),
-          );
-        }
+        const { x, y } = getCanvasCoords();
+        const { addElement } = canvasCtxRef.current;
+        addElement(
+          createImageElementFn(dataUrl, {
+            x: Math.max(0, x - 100),
+            y: Math.max(0, y - 100),
+            width: 200,
+            height: 200,
+            name,
+          }),
+        );
+        return;
       }
-      // Also handle native file drops
+
+      // 3. Handle native file drops
       if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
         const file = e.dataTransfer.files[0];
         if (file.type.startsWith("image/")) {

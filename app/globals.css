@@ -134,6 +134,18 @@ html {
    EDITOR LAYOUT — Canva-style viewport-locked design editor
    ═══════════════════════════════════════════════════════════ */
 
+/* Global cursor: pointer for all interactive elements in the editor */
+.editor-viewport button,
+.editor-viewport [role="button"],
+.editor-viewport a,
+.editor-viewport select,
+.editor-viewport label[for],
+.editor-viewport [data-draggable],
+.editor-viewport [data-layer-item],
+.editor-viewport .clickable {
+  cursor: pointer;
+}
+
 /* Root viewport container — no scroll, fills full screen */
 .editor-viewport {
   display: flex;

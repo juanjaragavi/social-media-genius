@@ -56,13 +56,13 @@ export function TopToolbar({
       <div className="flex items-center gap-2">
         <div className="hidden sm:flex items-center gap-1.5">
           <button
-            className="p-1.5 rounded hover:bg-gray-100 text-gray-400 transition-colors"
+            className="p-1.5 rounded hover:bg-gray-100 text-gray-400 transition-colors cursor-pointer"
             title="Deshacer"
           >
             <Undo2 className="h-4 w-4" />
           </button>
           <button
-            className="p-1.5 rounded hover:bg-gray-100 text-gray-400 transition-colors"
+            className="p-1.5 rounded hover:bg-gray-100 text-gray-400 transition-colors cursor-pointer"
             title="Rehacer"
           >
             <Redo2 className="h-4 w-4" />

@@ -35,7 +35,7 @@ export function SidebarPanel({
         </h3>
         <button
           onClick={onClose}
-          className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+          className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
           title="Cerrar panel"
         >
           <ChevronLeft className="h-4 w-4" />
