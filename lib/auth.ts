@@ -135,7 +135,13 @@ export const auth = betterAuth({
   plugins: [nextCookies()],
   advanced: {
     database: {
-      generateId: "uuid",
+      /**
+       * Generate UUIDs for all table rows.
+       * Must be a function — the string shorthand "uuid" is NOT supported
+       * in Better Auth 1.x and silently produces null IDs (which crashes
+       * the verification table insert during OAuth initiation).
+       */
+      generateId: () => crypto.randomUUID(),
     },
   },
 });
