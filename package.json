@@ -23,6 +23,7 @@
     "clsx": "^2.1.1",
     "file-saver": "^2.0.5",
     "firebase": "^12.9.0",
+    "google-auth-library": "^10.5.0",
     "konva": "^10.2.0",
     "lucide-react": "^0.563.0",
     "next": "16.1.6",

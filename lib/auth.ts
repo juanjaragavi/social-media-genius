@@ -122,6 +122,21 @@ export const auth = betterAuth({
       clientSecret: process.env.GOOGLE_OAUTH_CLIENT_SECRET!,
       // Do NOT set redirectURI — Better Auth auto-constructs it from baseURL.
       // Overriding it causes a silent 500 in the sign-in flow.
+
+      // Request Google Drive file-level access for banner exports.
+      // "drive.file" is the least-privilege scope — it only grants access
+      // to files created by this application.
+      scope: ["https://www.googleapis.com/auth/drive.file"],
+
+      // Request offline access so Google issues a refresh_token.
+      // Without this, access tokens expire after 3600s with no way to renew.
+      accessType: "offline",
+
+      // Force the consent screen on every login to guarantee a refresh_token.
+      // Google only issues refresh tokens on first consent — this ensures
+      // existing users who authenticated before the Drive scope was added
+      // re-consent and get new tokens with the Drive scope included.
+      prompt: "consent",
     },
   },
   session: {

@@ -15,6 +15,7 @@ import { useAutosave } from "./use-autosave";
 import { SidebarPanel } from "./sidebar-panel";
 import { PropertiesPanel } from "./properties-panel";
 import { InlinePropertiesPanel } from "./inline-properties-panel";
+import { authClient } from "@/lib/auth-client";
 
 // Panels
 import { GeneratePanel } from "./panels/generate-panel";
@@ -229,9 +230,28 @@ function EditorContent({ postId }: { postId?: string }) {
               window.open(data.webViewLink, "_blank");
             }
           } else {
-            setExportMessage(
-              `Error al subir a Drive: ${data.error || "desconocido"}`,
-            );
+            // Handle structured error codes from the API
+            if (data.code === "missing_scope") {
+              setExportMessage(
+                "Se necesitan permisos de Google Drive. Reconectando...",
+              );
+              // Trigger incremental scope grant via Better Auth linkSocial
+              try {
+                await authClient.linkSocial({
+                  provider: "google",
+                  scopes: ["https://www.googleapis.com/auth/drive.file"],
+                  callbackURL: window.location.href,
+                });
+              } catch {
+                setExportMessage(
+                  "Error: Cierra sesión y vuelve a iniciar para conceder acceso a Drive.",
+                );
+              }
+            } else {
+              setExportMessage(
+                `Error al subir a Drive: ${data.error || "desconocido"}`,
+              );
+            }
           }
         }
       } catch (err) {
