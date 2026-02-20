@@ -73,7 +73,7 @@ This project follows a strict three-tier branch architecture to ensure code qual
 
 ## 📁 Project Structure
 
-```
+```bash
 ├── app/
 │   ├── api/
 │   │   ├── generate-post/     # Text content generation

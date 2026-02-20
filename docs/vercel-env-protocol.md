@@ -56,6 +56,7 @@ diff .env.local .env.vercel-pulled
 ```
 
 This shows:
+
 - **MISSING**: Keys in `.env.example` that don't exist on Vercel
 - **EXTRA**: Keys on Vercel that aren't in `.env.example`
 - **OK**: Keys present in both
@@ -128,11 +129,11 @@ vercel env rm MY_VAR development --yes
 
 This sets:
 
-| Variable | Value |
-|---|---|
-| `NODE_ENV` | `production` |
-| `NEXT_PUBLIC_APP_URL` | `https://social.topnetworks.co` |
-| `BETTER_AUTH_URL` | `https://social.topnetworks.co` |
+| Variable                    | Value                                                          |
+| --------------------------- | -------------------------------------------------------------- |
+| `NODE_ENV`                  | `production`                                                   |
+| `NEXT_PUBLIC_APP_URL`       | `https://social.topnetworks.co`                                |
+| `BETTER_AUTH_URL`           | `https://social.topnetworks.co`                                |
 | `GOOGLE_DRIVE_REDIRECT_URI` | `https://social.topnetworks.co/api/auth/google-drive/callback` |
 
 ### Preview overrides
@@ -155,13 +156,13 @@ Only `NODE_ENV=production` is explicitly set for preview.
 
 ### Three-tier mapping
 
-| Variable | Development | Preview | Production |
-|---|---|---|---|
-| `NODE_ENV` | *(not set — defaults to development)* | `production` | `production` |
-| `NEXT_PUBLIC_APP_URL` | `http://localhost:3050` | *(uses VERCEL_URL)* | `https://social.topnetworks.co` |
-| `BETTER_AUTH_URL` | `http://localhost:3050` | *(uses VERCEL_URL fallback)* | `https://social.topnetworks.co` |
-| `GOOGLE_DRIVE_REDIRECT_URI` | `http://localhost:3050/api/auth/google-drive/callback` | *(not set)* | `https://social.topnetworks.co/api/auth/google-drive/callback` |
-| All other vars | Shared value | Shared value | Shared value |
+| Variable                    | Development                                            | Preview                      | Production                                                     |
+| --------------------------- | ------------------------------------------------------ | ---------------------------- | -------------------------------------------------------------- |
+| `NODE_ENV`                  | _(not set — defaults to development)_                  | `production`                 | `production`                                                   |
+| `NEXT_PUBLIC_APP_URL`       | `http://localhost:3050`                                | _(uses VERCEL_URL)_          | `https://social.topnetworks.co`                                |
+| `BETTER_AUTH_URL`           | `http://localhost:3050`                                | _(uses VERCEL_URL fallback)_ | `https://social.topnetworks.co`                                |
+| `GOOGLE_DRIVE_REDIRECT_URI` | `http://localhost:3050/api/auth/google-drive/callback` | _(not set)_                  | `https://social.topnetworks.co/api/auth/google-drive/callback` |
+| All other vars              | Shared value                                           | Shared value                 | Shared value                                                   |
 
 ### Variables shared across ALL environments (same value)
 
@@ -236,11 +237,11 @@ vercel env ls | grep NEW_VAR
 
 ## Files
 
-| File | Purpose |
-|---|---|
-| `scripts/vercel-env-manage.sh` | CLI management script (all commands) |
-| `.env.vercel-inject` | Bulk injection template (edit before running `add-all`) |
-| `.env.example` | Canonical key reference (all keys, empty values) |
-| `.env.local` | Local development config (pulled + patched with dev overrides) |
-| `.env.vercel-pulled` | Latest pull from Vercel dev (gitignored, for diff review) |
-| `.env.production.local` | Latest pull from Vercel prod (gitignored, for review) |
+| File                           | Purpose                                                        |
+| ------------------------------ | -------------------------------------------------------------- |
+| `scripts/vercel-env-manage.sh` | CLI management script (all commands)                           |
+| `.env.vercel-inject`           | Bulk injection template (edit before running `add-all`)        |
+| `.env.example`                 | Canonical key reference (all keys, empty values)               |
+| `.env.local`                   | Local development config (pulled + patched with dev overrides) |
+| `.env.vercel-pulled`           | Latest pull from Vercel dev (gitignored, for diff review)      |
+| `.env.production.local`        | Latest pull from Vercel prod (gitignored, for review)          |

@@ -172,7 +172,9 @@ export async function GET(req: Request) {
     clientSecretLength: clientSecret?.length ?? 0,
     clientSecretPrefix: clientSecret?.slice(0, 7) ?? "(unset)",
     clientSecretHasWhitespace:
-      clientSecret !== clientSecret?.trim() ? "YES — HAS LEADING/TRAILING WHITESPACE" : "clean",
+      clientSecret !== clientSecret?.trim()
+        ? "YES — HAS LEADING/TRAILING WHITESPACE"
+        : "clean",
     constructedRedirectUri,
   };
 
@@ -214,7 +216,8 @@ export async function GET(req: Request) {
   results.secretCheck = {
     betterAuthSecretSet: !!process.env.BETTER_AUTH_SECRET,
     authSecretSet: !!process.env.AUTH_SECRET,
-    secretLength: (process.env.BETTER_AUTH_SECRET || process.env.AUTH_SECRET)?.length ?? 0,
+    secretLength:
+      (process.env.BETTER_AUTH_SECRET || process.env.AUTH_SECRET)?.length ?? 0,
     nodeEnv: process.env.NODE_ENV,
     vercel: !!process.env.VERCEL,
   };
