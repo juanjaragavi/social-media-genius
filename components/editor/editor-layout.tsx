@@ -1,15 +1,17 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useRef, useEffect } from "react";
 import dynamic from "next/dynamic";
 import type { SidebarPanelId } from "./types";
 import type { GeneratedPostData } from "@/types/generated-post";
 import type { BannerDimension } from "@/types/editor";
 import { BANNER_DIMENSIONS } from "@/types/editor";
+import type { Post } from "@/types/persistence";
 
 import { CanvasProvider, useCanvasContext } from "./canvas-context";
 import { TopToolbar } from "./top-toolbar";
 import { IconRail } from "./icon-rail";
+import { useAutosave } from "./use-autosave";
 import { SidebarPanel } from "./sidebar-panel";
 import { PropertiesPanel } from "./properties-panel";
 import { InlinePropertiesPanel } from "./inline-properties-panel";
@@ -51,7 +53,7 @@ const InteractiveCanvas = dynamic(
   },
 );
 
-function EditorContent() {
+function EditorContent({ postId }: { postId?: string }) {
   const {
     state,
     setCanvasSize,
@@ -61,6 +63,49 @@ function EditorContent() {
     exportCanvasDataUrl,
     exportCanvasBlob,
   } = useCanvasContext();
+
+  // ─── Autosave ────────────────────────────────────────────
+  useAutosave({
+    postId: postId ?? null,
+    state,
+    exportCanvasDataUrl,
+    enabled: !!postId,
+  });
+
+  // ─── Post title (inline rename) ──────────────────────────
+  const [postTitle, setPostTitle] = useState<string | undefined>(
+    postId ? "" : undefined,
+  );
+
+  // Fetch initial title once when postId is present
+  const titleFetched = useRef(false);
+  useEffect(() => {
+    if (!postId || titleFetched.current) return;
+    titleFetched.current = true;
+    fetch(`/api/posts/${postId}`)
+      .then((r) => r.json())
+      .then((data: { title?: string }) => {
+        if (data.title) setPostTitle(data.title);
+      })
+      .catch(() => {});
+  }, [postId]);
+
+  const handlePostTitleChange = useCallback(
+    async (newTitle: string) => {
+      if (!postId) return;
+      setPostTitle(newTitle);
+      try {
+        await fetch(`/api/posts/${postId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title: newTitle }),
+        });
+      } catch {
+        // silently fail — user sees change regardless
+      }
+    },
+    [postId],
+  );
 
   // Sidebar state
   const [activeSidebarPanel, setActiveSidebarPanel] =
@@ -329,6 +374,9 @@ function EditorContent() {
         onShare={handleShare}
         isExporting={isExporting}
         exportMessage={exportMessage}
+        postTitle={postTitle}
+        onPostTitleChange={handlePostTitleChange}
+        showBackLink={!!postId}
       />
 
       {/* Main workspace area */}
@@ -366,10 +414,22 @@ function EditorContent() {
   );
 }
 
-export function EditorLayout() {
+export interface EditorLayoutProps {
+  postId?: string;
+  initialPost?: Post | null;
+}
+
+export function EditorLayout({ postId, initialPost }: EditorLayoutProps = {}) {
+  const initialWidth = initialPost?.dimensions?.width ?? 1080;
+  const initialHeight = initialPost?.dimensions?.height ?? 1080;
+
   return (
-    <CanvasProvider>
-      <EditorContent />
+    <CanvasProvider
+      initialWidth={initialWidth}
+      initialHeight={initialHeight}
+      initialCanvasState={initialPost?.canvas_state ?? null}
+    >
+      <EditorContent postId={postId} />
     </CanvasProvider>
   );
 }

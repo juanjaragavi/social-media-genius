@@ -63,7 +63,7 @@ function LoginContent() {
     try {
       const result = await signIn.social({
         provider: "google",
-        callbackURL: "/",
+        callbackURL: "/dashboard",
         errorCallbackURL: "/login",
       });
       if (result?.error) {

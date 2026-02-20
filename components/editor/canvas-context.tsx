@@ -15,6 +15,7 @@ import type {
   ShapeElement,
   EditorState,
 } from "@/types/editor";
+import type { CanvasState } from "@/types/persistence";
 import type Konva from "konva";
 
 // ─── Helper constructors ─────────────────────────────────
@@ -161,23 +162,26 @@ interface CanvasProviderProps {
   children: React.ReactNode;
   initialWidth?: number;
   initialHeight?: number;
+  /** Pre-loaded canvas state from a saved post */
+  initialCanvasState?: CanvasState | null;
 }
 
 export function CanvasProvider({
   children,
   initialWidth = 1080,
   initialHeight = 1080,
+  initialCanvasState,
 }: CanvasProviderProps) {
-  const [state, setState] = useState<EditorState>({
-    elements: [],
+  const [state, setState] = useState<EditorState>(() => ({
+    elements: initialCanvasState?.layers ?? [],
     selectedElementId: null,
     canvasWidth: initialWidth,
     canvasHeight: initialHeight,
-    backgroundColor: "#ffffff",
+    backgroundColor: initialCanvasState?.backgroundColor ?? "#ffffff",
     zoom: 1,
     history: [],
     historyIndex: -1,
-  });
+  }));
 
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
 

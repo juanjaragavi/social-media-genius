@@ -30,7 +30,8 @@ export function proxy(request: NextRequest) {
   const isProtectedRoute =
     pathname === "/" ||
     pathname.startsWith("/dashboard") ||
-    pathname.startsWith("/editor");
+    pathname.startsWith("/editor") ||
+    pathname.startsWith("/projects");
 
   // Never intercept auth API routes — they must pass through so the OAuth
   // callback can set cookies and issue redirects without interference.
@@ -45,9 +46,9 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // Redirect authenticated users away from login
+  // Redirect authenticated users away from login → dashboard
   if (isLoginRoute && sessionCookie) {
-    return NextResponse.redirect(new URL("/", request.url));
+    return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
   return NextResponse.next();

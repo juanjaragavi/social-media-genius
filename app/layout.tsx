@@ -33,10 +33,8 @@ export default function RootLayout({
   return (
     <html lang="es" className={poppins.variable}>
       <head />
-      <body className={`${poppins.className} antialiased overflow-hidden`}>
-        <div className="h-screen w-screen overflow-hidden bg-white">
-          {children}
-        </div>
+      <body className={`${poppins.className} antialiased`}>
+        <div className="h-screen w-screen bg-white">{children}</div>
         {process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID && (
           <Suspense fallback={null}>
             <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID} />

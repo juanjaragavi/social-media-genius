@@ -19,6 +19,7 @@ import {
   Linkedin,
   MessageCircle,
   Mail,
+  ArrowLeft,
 } from "lucide-react";
 import type { BannerDimension } from "@/types/editor";
 import type { ExportDestination, ShareTarget } from "./editor-layout";
@@ -30,6 +31,12 @@ interface TopToolbarProps {
   onShare?: (target: ShareTarget) => void;
   isExporting?: boolean;
   exportMessage?: string | null;
+  /** Post title — shown as editable inline field when present */
+  postTitle?: string;
+  /** Called when the user finishes editing the post title */
+  onPostTitleChange?: (title: string) => void;
+  /** Show a back-to-dashboard link */
+  showBackLink?: boolean;
 }
 
 export function TopToolbar({
@@ -39,11 +46,17 @@ export function TopToolbar({
   onShare,
   isExporting,
   exportMessage,
+  postTitle,
+  onPostTitleChange,
+  showBackLink,
 }: TopToolbarProps) {
   const { data: session } = useSession();
   const [signingOut, setSigningOut] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleDraft, setTitleDraft] = useState(postTitle ?? "");
+  const titleInputRef = useRef<HTMLInputElement>(null);
   const exportMenuRef = useRef<HTMLDivElement>(null);
   const shareMenuRef = useRef<HTMLDivElement>(null);
 
@@ -79,8 +92,17 @@ export function TopToolbar({
 
   return (
     <header className="editor-top-toolbar">
-      {/* Left section — Logo & Project */}
+      {/* Left section — Back link, Logo & Project */}
       <div className="flex items-center gap-3 min-w-0">
+        {showBackLink && (
+          <a
+            href="/dashboard"
+            className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
+            title="Volver al panel"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </a>
+        )}
         <Image
           src="https://storage.googleapis.com/media-topfinanzas-com/images/topnetworks-positivo-sinfondo.webp"
           alt="TopNetworks Logo"
@@ -89,13 +111,52 @@ export function TopToolbar({
           className="h-8 w-auto shrink-0"
           priority
         />
-        <div className="hidden md:flex items-center gap-1.5 text-sm font-semibold text-gray-700">
-          <Share2 className="h-4 w-4 text-lime-600" />
-          <span className="bg-linear-to-r from-blue-600 via-cyan-600 to-lime-600 bg-clip-text text-transparent">
-            Social Media Genius
-          </span>
-          <Sparkles className="h-4 w-4 text-cyan-500" />
-        </div>
+        {postTitle !== undefined ? (
+          /* Editable post title */
+          editingTitle ? (
+            <input
+              ref={titleInputRef}
+              className="text-sm font-semibold text-gray-700 bg-white border border-blue-300 rounded px-2 py-0.5 outline-none focus:ring-2 focus:ring-blue-200 max-w-48"
+              value={titleDraft}
+              onChange={(e) => setTitleDraft(e.target.value)}
+              onBlur={() => {
+                setEditingTitle(false);
+                if (titleDraft.trim() && titleDraft !== postTitle) {
+                  onPostTitleChange?.(titleDraft.trim());
+                } else {
+                  setTitleDraft(postTitle ?? "");
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                if (e.key === "Escape") {
+                  setTitleDraft(postTitle ?? "");
+                  setEditingTitle(false);
+                }
+              }}
+              autoFocus
+            />
+          ) : (
+            <button
+              className="text-sm font-semibold text-gray-700 hover:text-blue-600 transition-colors truncate max-w-48 cursor-pointer"
+              onClick={() => {
+                setTitleDraft(postTitle ?? "");
+                setEditingTitle(true);
+              }}
+              title="Clic para renombrar"
+            >
+              {postTitle || "Sin título"}
+            </button>
+          )
+        ) : (
+          <div className="hidden md:flex items-center gap-1.5 text-sm font-semibold text-gray-700">
+            <Share2 className="h-4 w-4 text-lime-600" />
+            <span className="bg-linear-to-r from-blue-600 via-cyan-600 to-lime-600 bg-clip-text text-transparent">
+              Social Media Genius
+            </span>
+            <Sparkles className="h-4 w-4 text-cyan-500" />
+          </div>
+        )}
       </div>
 
       {/* Center section — Context info */}

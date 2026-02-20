@@ -737,3 +737,46 @@ html {
   background: #ecfdf5;
   box-shadow: 0 0 0 3px rgba(132, 204, 22, 0.15);
 }
+
+/* ─── Dashboard ──────────────────────────────────────── */
+
+.dashboard-viewport {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  background-color: #f9fafb;
+}
+
+.dashboard-sidebar {
+  width: 220px;
+  min-width: 220px;
+  display: flex;
+  flex-direction: column;
+  background: white;
+  border-right: 1px solid #e5e7eb;
+  overflow-y: auto;
+}
+
+.dashboard-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.dashboard-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 32px;
+}
+
+/* Post card hover overlay */
+.post-card-overlay {
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+
+.post-card:hover .post-card-overlay {
+  opacity: 1;
+}
