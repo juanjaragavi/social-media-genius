@@ -17,19 +17,11 @@ export const metadata: Metadata = {
     "Generador profesional de contenido para redes sociales optimizado con IA by TopNetworks",
   icons: {
     icon: [
-      {
-        url: "https://storage.googleapis.com/media-topfinanzas-com/favicon.png",
-        sizes: "any",
-      },
-      {
-        url: "https://storage.googleapis.com/media-topfinanzas-com/favicon.png",
-        type: "image/png",
-        sizes: "32x32",
-      },
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/favicon.png", type: "image/png", sizes: "32x32" },
     ],
-    apple: "https://storage.googleapis.com/media-topfinanzas-com/favicon.png",
-    shortcut:
-      "https://storage.googleapis.com/media-topfinanzas-com/favicon.png",
+    apple: "/favicon.png",
+    shortcut: "/favicon.ico",
   },
 };
 
@@ -40,22 +32,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" className={poppins.variable}>
-      <head>
-        <link
-          rel="icon"
-          href="https://storage.googleapis.com/media-topfinanzas-com/favicon.png"
-          sizes="any"
-        />
-        <link
-          rel="icon"
-          href="https://storage.googleapis.com/media-topfinanzas-com/favicon.png"
-          type="image/png"
-        />
-        <link
-          rel="apple-touch-icon"
-          href="https://storage.googleapis.com/media-topfinanzas-com/favicon.png"
-        />
-      </head>
+      <head />
       <body className={`${poppins.className} antialiased overflow-hidden`}>
         <div className="h-screen w-screen overflow-hidden bg-white">
           {children}

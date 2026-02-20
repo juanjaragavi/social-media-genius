@@ -134,7 +134,7 @@ export function CanvasArea({
               <p className="text-sm text-gray-400 font-medium">
                 Tu banner aparecerá aquí
               </p>
-              <p className="text-xs text-gray-300 mt-1">
+              <p className="text-xs text-gray-500 mt-1">
                 {canvasWidth}×{canvasHeight} px
               </p>
             </div>

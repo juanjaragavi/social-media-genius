@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { getPlatformIconComponent } from "@/components/ui/platform-icons";
 import type { GeneratedPostData } from "@/types/generated-post";
-import { UI_LABELS, LOCALES, type OutputLocale } from "@/lib/i18n/translations";
+import { LOCALES, type OutputLocale } from "@/lib/i18n/translations";
 
 interface PropertiesPanelProps {
   generatedPost: GeneratedPostData | null;

@@ -1,0 +1,595 @@
+"use client";
+
+import React, {
+  useRef,
+  useEffect,
+  useMemo,
+  useCallback,
+  useState,
+} from "react";
+import {
+  Stage,
+  Layer,
+  Rect,
+  Text,
+  Image,
+  Transformer,
+  Circle,
+  Star,
+  Line,
+  RegularPolygon,
+} from "react-konva";
+import useImage from "use-image";
+import { ZoomIn, ZoomOut, Maximize2 } from "lucide-react";
+import {
+  useCanvasContext,
+  createImageElement as createImageElementFn,
+} from "./canvas-context";
+import type {
+  AnyEditorElement,
+  TextElement,
+  ImageElement,
+  ShapeElement,
+} from "@/types/editor";
+import type Konva from "konva";
+
+// ─── Canvas Image Component ─────────────────────────────
+
+function CanvasImageElement({
+  element,
+  isSelected,
+  onSelect,
+  onChange,
+}: {
+  element: ImageElement;
+  isSelected: boolean;
+  onSelect: () => void;
+  onChange: (updates: Partial<AnyEditorElement>) => void;
+}) {
+  const [img] = useImage(element.src, "anonymous");
+  const shapeRef = useRef<Konva.Image>(null);
+  const trRef = useRef<Konva.Transformer>(null);
+
+  useEffect(() => {
+    if (isSelected && trRef.current && shapeRef.current) {
+      trRef.current.nodes([shapeRef.current]);
+      trRef.current.getLayer()?.batchDraw();
+    }
+  }, [isSelected]);
+
+  return (
+    <>
+      {/* eslint-disable-next-line jsx-a11y/alt-text */}
+      <Image
+        ref={shapeRef}
+        image={img}
+        x={element.x}
+        y={element.y}
+        width={element.width}
+        height={element.height}
+        rotation={element.rotation}
+        opacity={element.opacity}
+        visible={element.visible}
+        draggable={!element.locked}
+        onClick={onSelect}
+        onTap={onSelect}
+        onDragEnd={(e) => {
+          onChange({ x: e.target.x(), y: e.target.y() });
+        }}
+        onTransformEnd={() => {
+          const node = shapeRef.current;
+          if (!node) return;
+          const scaleX = node.scaleX();
+          const scaleY = node.scaleY();
+          node.scaleX(1);
+          node.scaleY(1);
+          onChange({
+            x: node.x(),
+            y: node.y(),
+            width: Math.max(20, node.width() * scaleX),
+            height: Math.max(20, node.height() * scaleY),
+            rotation: node.rotation(),
+          });
+        }}
+      />
+      {isSelected && !element.locked && (
+        <Transformer
+          ref={trRef}
+          rotateEnabled
+          enabledAnchors={[
+            "top-left",
+            "top-right",
+            "bottom-left",
+            "bottom-right",
+          ]}
+          boundBoxFunc={(_oldBox, newBox) => {
+            if (Math.abs(newBox.width) < 20 || Math.abs(newBox.height) < 20)
+              return _oldBox;
+            return newBox;
+          }}
+        />
+      )}
+    </>
+  );
+}
+
+// ─── Canvas Text Component ──────────────────────────────
+
+function CanvasTextElement({
+  element,
+  isSelected,
+  onSelect,
+  onChange,
+}: {
+  element: TextElement;
+  isSelected: boolean;
+  onSelect: () => void;
+  onChange: (updates: Partial<TextElement>) => void;
+}) {
+  const shapeRef = useRef<Konva.Text>(null);
+  const trRef = useRef<Konva.Transformer>(null);
+
+  useEffect(() => {
+    if (isSelected && trRef.current && shapeRef.current) {
+      trRef.current.nodes([shapeRef.current]);
+      trRef.current.getLayer()?.batchDraw();
+    }
+  }, [isSelected]);
+
+  return (
+    <>
+      <Text
+        ref={shapeRef}
+        x={element.x}
+        y={element.y}
+        width={element.width}
+        text={element.text}
+        fontSize={element.fontSize}
+        fontFamily={element.fontFamily}
+        fontStyle={
+          `${element.fontWeight === "bold" ? "bold" : ""} ${element.fontStyle === "italic" ? "italic" : ""}`.trim() ||
+          "normal"
+        }
+        textDecoration={
+          element.textDecoration === "none" ? "" : element.textDecoration
+        }
+        fill={element.fill}
+        align={element.align}
+        lineHeight={element.lineHeight}
+        letterSpacing={element.letterSpacing}
+        rotation={element.rotation}
+        opacity={element.opacity}
+        visible={element.visible}
+        draggable={!element.locked}
+        onClick={onSelect}
+        onTap={onSelect}
+        onDragEnd={(e) => {
+          onChange({ x: e.target.x(), y: e.target.y() });
+        }}
+        onTransformEnd={() => {
+          const node = shapeRef.current;
+          if (!node) return;
+          const scaleX = node.scaleX();
+          node.scaleX(1);
+          node.scaleY(1);
+          onChange({
+            x: node.x(),
+            y: node.y(),
+            width: Math.max(20, node.width() * scaleX),
+            rotation: node.rotation(),
+          });
+        }}
+      />
+      {isSelected && !element.locked && (
+        <Transformer
+          ref={trRef}
+          rotateEnabled
+          enabledAnchors={["middle-left", "middle-right"]}
+          boundBoxFunc={(_oldBox, newBox) => {
+            if (Math.abs(newBox.width) < 20) return _oldBox;
+            return newBox;
+          }}
+        />
+      )}
+    </>
+  );
+}
+
+// ─── Canvas Shape Component ─────────────────────────────
+
+function CanvasShapeElement({
+  element,
+  isSelected,
+  onSelect,
+  onChange,
+}: {
+  element: ShapeElement;
+  isSelected: boolean;
+  onSelect: () => void;
+  onChange: (updates: Partial<ShapeElement>) => void;
+}) {
+  const shapeRef = useRef<Konva.Shape>(null);
+  const trRef = useRef<Konva.Transformer>(null);
+
+  useEffect(() => {
+    if (isSelected && trRef.current && shapeRef.current) {
+      trRef.current.nodes([shapeRef.current]);
+      trRef.current.getLayer()?.batchDraw();
+    }
+  }, [isSelected]);
+
+  const commonProps = {
+    x: element.x,
+    y: element.y,
+    rotation: element.rotation,
+    opacity: element.opacity,
+    visible: element.visible,
+    draggable: !element.locked,
+    onClick: onSelect,
+    onTap: onSelect,
+    onDragEnd: (e: Konva.KonvaEventObject<DragEvent>) => {
+      onChange({ x: e.target.x(), y: e.target.y() });
+    },
+    onTransformEnd: () => {
+      const node = shapeRef.current;
+      if (!node) return;
+      const scaleX = node.scaleX();
+      const scaleY = node.scaleY();
+      node.scaleX(1);
+      node.scaleY(1);
+      onChange({
+        x: node.x(),
+        y: node.y(),
+        width: Math.max(20, node.width() * scaleX),
+        height: Math.max(20, node.height() * scaleY),
+        rotation: node.rotation(),
+      });
+    },
+  };
+
+  const renderShape = () => {
+    switch (element.shapeType) {
+      case "rect":
+        return (
+          <Rect
+            ref={shapeRef as React.RefObject<Konva.Rect>}
+            {...commonProps}
+            width={element.width}
+            height={element.height}
+            fill={element.fill}
+            stroke={element.stroke}
+            strokeWidth={element.strokeWidth}
+            cornerRadius={element.cornerRadius || 0}
+          />
+        );
+      case "circle":
+        return (
+          <Circle
+            ref={shapeRef as React.RefObject<Konva.Circle>}
+            {...commonProps}
+            x={element.x + element.width / 2}
+            y={element.y + element.height / 2}
+            radius={Math.min(element.width, element.height) / 2}
+            fill={element.fill}
+            stroke={element.stroke}
+            strokeWidth={element.strokeWidth}
+          />
+        );
+      case "triangle":
+        return (
+          <RegularPolygon
+            ref={shapeRef as React.RefObject<Konva.RegularPolygon>}
+            {...commonProps}
+            x={element.x + element.width / 2}
+            y={element.y + element.height / 2}
+            sides={3}
+            radius={Math.min(element.width, element.height) / 2}
+            fill={element.fill}
+            stroke={element.stroke}
+            strokeWidth={element.strokeWidth}
+          />
+        );
+      case "star":
+        return (
+          <Star
+            ref={shapeRef as React.RefObject<Konva.Star>}
+            {...commonProps}
+            x={element.x + element.width / 2}
+            y={element.y + element.height / 2}
+            numPoints={5}
+            innerRadius={Math.min(element.width, element.height) / 4}
+            outerRadius={Math.min(element.width, element.height) / 2}
+            fill={element.fill}
+            stroke={element.stroke}
+            strokeWidth={element.strokeWidth}
+          />
+        );
+      case "line":
+        return (
+          <Line
+            ref={shapeRef as React.RefObject<Konva.Line>}
+            {...commonProps}
+            points={[0, 0, element.width, 0]}
+            stroke={element.stroke || element.fill}
+            strokeWidth={element.strokeWidth || 4}
+          />
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <>
+      {renderShape()}
+      {isSelected && !element.locked && (
+        <Transformer
+          ref={trRef}
+          rotateEnabled
+          enabledAnchors={[
+            "top-left",
+            "top-right",
+            "bottom-left",
+            "bottom-right",
+          ]}
+          boundBoxFunc={(_oldBox, newBox) => {
+            if (Math.abs(newBox.width) < 20 || Math.abs(newBox.height) < 20)
+              return _oldBox;
+            return newBox;
+          }}
+        />
+      )}
+    </>
+  );
+}
+
+// ─── Main Interactive Canvas ────────────────────────────
+
+export function InteractiveCanvas() {
+  const ctx = useCanvasContext();
+  const { state, updateElement, selectElement, deleteElement, setZoom } = ctx;
+
+  const stageRef = useRef<Konva.Stage>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const canvasCtxRef = useRef(ctx);
+  useEffect(() => {
+    canvasCtxRef.current = ctx;
+  });
+  const [containerSize, setContainerSize] = useState({ w: 600, h: 600 });
+
+  // Measure container
+  useEffect(() => {
+    const updateSize = () => {
+      if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        setContainerSize({ w: rect.width, h: rect.height });
+      }
+    };
+    updateSize();
+    const observer = new ResizeObserver(updateSize);
+    if (containerRef.current) observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  // Calculate scale to fit
+  const scale = useMemo(() => {
+    const padding = 60;
+    const scaleX = (containerSize.w - padding * 2) / state.canvasWidth;
+    const scaleY = (containerSize.h - padding * 2) / state.canvasHeight;
+    return Math.min(scaleX, scaleY, 1) * state.zoom;
+  }, [containerSize, state.canvasWidth, state.canvasHeight, state.zoom]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (
+        (e.target as HTMLElement).tagName === "INPUT" ||
+        (e.target as HTMLElement).tagName === "TEXTAREA"
+      )
+        return;
+      if (
+        (e.key === "Delete" || e.key === "Backspace") &&
+        state.selectedElementId
+      ) {
+        deleteElement(state.selectedElementId);
+      }
+      if (e.key === "Escape") {
+        selectElement(null);
+      }
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [state.selectedElementId, deleteElement, selectElement]);
+
+  // Mouse wheel zoom
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const handleWheel = (e: WheelEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        const delta = e.deltaY > 0 ? -0.05 : 0.05;
+        setZoom(Math.max(0.25, Math.min(3, state.zoom + delta)));
+      }
+    };
+    el.addEventListener("wheel", handleWheel, { passive: false });
+    return () => el.removeEventListener("wheel", handleWheel);
+  }, [state.zoom, setZoom]);
+
+  const handleZoomIn = useCallback(() => {
+    setZoom(Math.min(3, state.zoom + 0.1));
+  }, [state.zoom, setZoom]);
+
+  const handleZoomOut = useCallback(() => {
+    setZoom(Math.max(0.25, state.zoom - 0.1));
+  }, [state.zoom, setZoom]);
+
+  const handleFitToScreen = useCallback(() => {
+    setZoom(1);
+  }, [setZoom]);
+
+  // Handle file drop onto canvas
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      const dataUrl = e.dataTransfer.getData("text/plain");
+      const name = e.dataTransfer.getData("text/name") || "Imagen";
+      if (dataUrl && dataUrl.startsWith("data:")) {
+        // Calculate drop position relative to canvas
+        const stageNode = stageRef.current;
+        if (stageNode) {
+          const stageBox = stageNode.container().getBoundingClientRect();
+          const x = (e.clientX - stageBox.left) / scale;
+          const y = (e.clientY - stageBox.top) / scale;
+          const { addElement } = canvasCtxRef.current;
+          addElement(
+            createImageElementFn(dataUrl, {
+              x: Math.max(0, x - 100),
+              y: Math.max(0, y - 100),
+              width: 200,
+              height: 200,
+              name,
+            }),
+          );
+        }
+      }
+      // Also handle native file drops
+      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        const file = e.dataTransfer.files[0];
+        if (file.type.startsWith("image/")) {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const src = reader.result as string;
+            const { addImage: addImg } = canvasCtxRef.current;
+            addImg(src, file.name);
+          };
+          reader.readAsDataURL(file);
+        }
+      }
+    },
+    [scale],
+  );
+
+  return (
+    <div className="editor-canvas-area" ref={containerRef}>
+      <div
+        className="editor-canvas-workspace"
+        onDrop={handleDrop}
+        onDragOver={(e) => e.preventDefault()}
+      >
+        <div
+          className="shadow-xl rounded-sm overflow-hidden"
+          style={{
+            width: state.canvasWidth * scale,
+            height: state.canvasHeight * scale,
+          }}
+        >
+          <Stage
+            ref={stageRef}
+            width={state.canvasWidth * scale}
+            height={state.canvasHeight * scale}
+            scaleX={scale}
+            scaleY={scale}
+            onMouseDown={(e) => {
+              if (e.target === e.target.getStage()) {
+                selectElement(null);
+              }
+            }}
+          >
+            <Layer>
+              {/* Background */}
+              <Rect
+                x={0}
+                y={0}
+                width={state.canvasWidth}
+                height={state.canvasHeight}
+                fill={state.backgroundColor}
+              />
+
+              {/* Elements rendered in order (z-index = array position) */}
+              {state.elements
+                .filter((el) => el.visible)
+                .map((el) => {
+                  if (el.type === "text") {
+                    return (
+                      <CanvasTextElement
+                        key={el.id}
+                        element={el as TextElement}
+                        isSelected={state.selectedElementId === el.id}
+                        onSelect={() => selectElement(el.id)}
+                        onChange={(updates) => updateElement(el.id, updates)}
+                      />
+                    );
+                  }
+                  if (el.type === "image" || el.type === "watermark") {
+                    return (
+                      <CanvasImageElement
+                        key={el.id}
+                        element={el as ImageElement}
+                        isSelected={state.selectedElementId === el.id}
+                        onSelect={() => selectElement(el.id)}
+                        onChange={(updates) => updateElement(el.id, updates)}
+                      />
+                    );
+                  }
+                  if (el.type === "shape") {
+                    return (
+                      <CanvasShapeElement
+                        key={el.id}
+                        element={el as ShapeElement}
+                        isSelected={state.selectedElementId === el.id}
+                        onSelect={() => selectElement(el.id)}
+                        onChange={(updates) => updateElement(el.id, updates)}
+                      />
+                    );
+                  }
+                  return null;
+                })}
+            </Layer>
+          </Stage>
+        </div>
+
+        {/* Empty state overlay */}
+        {state.elements.length === 0 && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+            <p className="text-sm text-gray-400 font-medium">
+              Tu banner aparecerá aquí
+            </p>
+            <p className="text-xs text-gray-500 mt-1">
+              {state.canvasWidth}×{state.canvasHeight} px
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Zoom controls */}
+      <div className="editor-zoom-controls">
+        <button
+          onClick={handleZoomOut}
+          className="editor-zoom-btn"
+          title="Alejar"
+        >
+          <ZoomOut className="h-4 w-4" />
+        </button>
+        <span className="text-xs font-medium text-gray-600 min-w-12 text-center tabular-nums">
+          {Math.round(state.zoom * 100)}%
+        </span>
+        <button
+          onClick={handleZoomIn}
+          className="editor-zoom-btn"
+          title="Acercar"
+        >
+          <ZoomIn className="h-4 w-4" />
+        </button>
+        <div className="w-px h-4 bg-gray-200" />
+        <button
+          onClick={handleFitToScreen}
+          className="editor-zoom-btn"
+          title="Ajustar a pantalla"
+        >
+          <Maximize2 className="h-4 w-4" />
+        </button>
+      </div>
+    </div>
+  );
+}

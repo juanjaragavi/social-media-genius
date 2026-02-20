@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useMemo, useCallback } from "react";
 import {
   Eye,
   EyeOff,
@@ -12,26 +12,7 @@ import {
   Stamp,
   Layers as LayersIcon,
 } from "lucide-react";
-
-interface Layer {
-  id: string;
-  name: string;
-  type: "image" | "text" | "shape" | "watermark";
-  visible: boolean;
-  locked: boolean;
-  thumbnail?: string;
-}
-
-interface LayersPanelProps {
-  layers?: Layer[];
-  selectedLayerId?: string | null;
-  onSelectLayer?: (id: string) => void;
-  onToggleVisibility?: (id: string) => void;
-  onToggleLock?: (id: string) => void;
-  onDeleteLayer?: (id: string) => void;
-  onMoveUp?: (id: string) => void;
-  onMoveDown?: (id: string) => void;
-}
+import { useCanvasContext } from "../canvas-context";
 
 function getLayerIcon(type: string) {
   switch (type) {
@@ -48,17 +29,48 @@ function getLayerIcon(type: string) {
   }
 }
 
-export function LayersPanel({
-  layers = [],
-  selectedLayerId,
-  onSelectLayer,
-  onToggleVisibility,
-  onToggleLock,
-}: LayersPanelProps) {
+/**
+ * ConnectedLayersPanel maps the shared canvas context elements
+ * to the layers panel UI, allowing selection, visibility toggle,
+ * lock/unlock, and reordering.
+ */
+export function ConnectedLayersPanel() {
+  const { state, selectElement, updateElement } = useCanvasContext();
+
+  // We display layers from top (highest z-index) to bottom
+  const layers = useMemo(
+    () =>
+      [...state.elements].reverse().map((el) => ({
+        id: el.id,
+        name: el.name,
+        type: el.type as "image" | "text" | "shape" | "watermark",
+        visible: el.visible,
+        locked: el.locked,
+        thumbnail:
+          el.type === "image" ? (el as { src: string }).src : undefined,
+      })),
+    [state.elements],
+  );
+
+  const handleToggleVisibility = useCallback(
+    (id: string) => {
+      const el = state.elements.find((e) => e.id === id);
+      if (el) updateElement(id, { visible: !el.visible });
+    },
+    [state.elements, updateElement],
+  );
+
+  const handleToggleLock = useCallback(
+    (id: string) => {
+      const el = state.elements.find((e) => e.id === id);
+      if (el) updateElement(id, { locked: !el.locked });
+    },
+    [state.elements, updateElement],
+  );
+
   if (layers.length === 0) {
     return (
       <div className="space-y-4">
-        {/* Tab header like Canva */}
         <div className="flex border-b border-gray-200">
           <button className="flex-1 py-2 text-xs font-medium text-gray-400 border-b-2 border-transparent">
             Organizar
@@ -72,7 +84,7 @@ export function LayersPanel({
           <LayersIcon className="h-10 w-10 text-gray-400 mb-3" />
           <p className="text-xs text-gray-400 font-medium">Sin capas</p>
           <p className="text-[10px] text-gray-500 mt-1">
-            Genera un banner para comenzar a editar capas
+            Genera un banner o agrega elementos para comenzar
           </p>
         </div>
       </div>
@@ -94,12 +106,12 @@ export function LayersPanel({
       {/* Layer list */}
       <div className="space-y-0.5">
         {layers.map((layer) => {
-          const isSelected = selectedLayerId === layer.id;
+          const isSelected = state.selectedElementId === layer.id;
           return (
             <div
               key={layer.id}
               className={`editor-layer-item ${isSelected ? "active" : ""}`}
-              onClick={() => onSelectLayer?.(layer.id)}
+              onClick={() => selectElement(layer.id)}
             >
               {/* Drag handle */}
               <div className="editor-layer-grip">
@@ -137,11 +149,11 @@ export function LayersPanel({
               </div>
 
               {/* Actions */}
-              <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="flex items-center gap-0.5">
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    onToggleVisibility?.(layer.id);
+                    handleToggleVisibility(layer.id);
                   }}
                   className="p-0.5 rounded hover:bg-gray-200 text-gray-400"
                   title={layer.visible ? "Ocultar" : "Mostrar"}
@@ -155,7 +167,7 @@ export function LayersPanel({
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    onToggleLock?.(layer.id);
+                    handleToggleLock(layer.id);
                   }}
                   className="p-0.5 rounded hover:bg-gray-200 text-gray-400"
                   title={layer.locked ? "Desbloquear" : "Bloquear"}

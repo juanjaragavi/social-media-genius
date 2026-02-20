@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useCallback, useRef } from "react";
-import { Upload, ImageIcon, FolderOpen, Search } from "lucide-react";
+import { Upload, ImageIcon, FolderOpen } from "lucide-react";
 
 export function MediaPanel() {
   const [dragOver, setDragOver] = useState(false);
@@ -37,7 +37,7 @@ export function MediaPanel() {
         onDragLeave={() => setDragOver(false)}
         onClick={() => fileInputRef.current?.click()}
       >
-        <Upload className="h-8 w-8 text-gray-300 mb-2" />
+        <Upload className="h-8 w-8 text-gray-400 mb-2" />
         <p className="text-xs font-medium text-gray-500 mb-1">
           Arrastra archivos aquí
         </p>

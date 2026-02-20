@@ -8,9 +8,9 @@
  */
 
 import { useSearchParams } from "next/navigation";
-import { Suspense, useState } from "react";
+import { Suspense, useState, useEffect } from "react";
 import Image from "next/image";
-import { Share2, Sparkles } from "lucide-react";
+import { Share2, Sparkles, X } from "lucide-react";
 import { signIn } from "@/lib/auth-client";
 
 function GoogleIcon() {
@@ -46,6 +46,16 @@ function LoginContent() {
   const paramError = searchParams.get("error");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(paramError);
+
+  // Clear the ?error= query parameter from the URL after reading it,
+  // so stale errors don't persist across page reloads / back navigation.
+  useEffect(() => {
+    if (paramError) {
+      window.history.replaceState({}, "", "/login");
+    }
+  }, [paramError]);
+
+  const dismissError = () => setError(null);
 
   const handleGoogleSignIn = async () => {
     setLoading(true);
@@ -111,8 +121,19 @@ function LoginContent() {
 
           {/* Error Banner */}
           {error && (
-            <div className="rounded-lg bg-red-50 border border-red-200 p-4 text-sm text-red-700">
-              {decodeURIComponent(error)}
+            <div className="rounded-lg bg-red-50 border border-red-200 p-4 text-sm text-red-700 flex items-start gap-3">
+              <div className="flex-1 min-w-0">
+                {error === "please_restart_the_process"
+                  ? "La sesión expiró o hubo un problema de autenticación. Por favor, intenta iniciar sesión de nuevo."
+                  : decodeURIComponent(error)}
+              </div>
+              <button
+                onClick={dismissError}
+                className="p-0.5 rounded hover:bg-red-100 text-red-400 hover:text-red-600 transition-colors shrink-0"
+                aria-label="Cerrar mensaje de error"
+              >
+                <X className="h-4 w-4" />
+              </button>
             </div>
           )}
 

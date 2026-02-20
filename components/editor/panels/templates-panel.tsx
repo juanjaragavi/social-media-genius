@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Monitor, Smartphone, Square, RectangleHorizontal } from "lucide-react";
+import { Smartphone, Square, RectangleHorizontal } from "lucide-react";
 import { BANNER_DIMENSIONS, type BannerDimension } from "@/types/editor";
 
 interface TemplatesPanelProps {

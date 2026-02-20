@@ -2,36 +2,36 @@
 
 import React, { useState, useCallback } from "react";
 import dynamic from "next/dynamic";
-import { X } from "lucide-react";
 import type { SidebarPanelId } from "./types";
 import type { GeneratedPostData } from "@/types/generated-post";
 import type { BannerDimension } from "@/types/editor";
 import { BANNER_DIMENSIONS } from "@/types/editor";
 
+import { CanvasProvider, useCanvasContext } from "./canvas-context";
 import { TopToolbar } from "./top-toolbar";
 import { IconRail } from "./icon-rail";
 import { SidebarPanel } from "./sidebar-panel";
-import { CanvasArea } from "./canvas-area";
 import { PropertiesPanel } from "./properties-panel";
+import { InlinePropertiesPanel } from "./inline-properties-panel";
 
 // Panels
 import { GeneratePanel } from "./panels/generate-panel";
 import { TemplatesPanel } from "./panels/templates-panel";
-import { ElementsPanel } from "./panels/elements-panel";
-import { TextPanel } from "./panels/text-panel";
-import { MediaPanel } from "./panels/media-panel";
-import { LayersPanel } from "./panels/layers-panel";
+import { ConnectedElementsPanel } from "./panels/connected-elements-panel";
+import { ConnectedTextPanel } from "./panels/connected-text-panel";
+import { ConnectedMediaPanel } from "./panels/connected-media-panel";
+import { ConnectedLayersPanel } from "./panels/connected-layers-panel";
 
-// Lazy-load the heavy BannerEditor (Konva) only when needed
-const BannerEditor = dynamic(
+// Lazy-load the interactive canvas (Konva-based)
+const InteractiveCanvas = dynamic(
   () =>
-    import("@/components/banner-editor/banner-editor").then(
-      (mod) => mod.BannerEditor,
-    ),
+    import("./interactive-canvas").then((mod) => ({
+      default: mod.InteractiveCanvas,
+    })),
   {
     ssr: false,
     loading: () => (
-      <div className="flex items-center justify-center h-full bg-gray-50">
+      <div className="flex-1 flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <div className="editor-canvas-spinner mx-auto" />
           <p className="mt-3 text-sm text-gray-400">Cargando editor...</p>
@@ -41,7 +41,10 @@ const BannerEditor = dynamic(
   },
 );
 
-export function EditorLayout() {
+function EditorContent() {
+  const { setCanvasSize, setBackgroundImage, selectedElement } =
+    useCanvasContext();
+
   // Sidebar state
   const [activeSidebarPanel, setActiveSidebarPanel] =
     useState<SidebarPanelId | null>("generate");
@@ -52,20 +55,13 @@ export function EditorLayout() {
   );
   const [isGenerating, setIsGenerating] = useState(false);
 
-  // Canvas dimensions
+  // Canvas dimensions (for generate panel)
   const [selectedDimension, setSelectedDimension] = useState<BannerDimension>(
     BANNER_DIMENSIONS[0],
   );
-  const [canvasZoom, setCanvasZoom] = useState(100);
 
-  // Properties panel (results)
-  const [showProperties, setShowProperties] = useState(false);
-
-  // Konva editor state
-  const [editorOpen, setEditorOpen] = useState(false);
-  const [editorImage, setEditorImage] = useState<string | undefined>(undefined);
-  const [editorWidth, setEditorWidth] = useState(1080);
-  const [editorHeight, setEditorHeight] = useState(1080);
+  // Properties panels
+  const [showGenerationResult, setShowGenerationResult] = useState(false);
 
   // Handle sidebar panel toggle
   const handleSelectPanel = useCallback((panel: SidebarPanelId) => {
@@ -76,45 +72,35 @@ export function EditorLayout() {
     setActiveSidebarPanel(null);
   }, []);
 
-  // Handle post generation
-  const handlePostGenerated = useCallback((post: GeneratedPostData) => {
-    setGeneratedPost(post);
-    setShowProperties(true);
-    // Close generate panel, open properties
-    setActiveSidebarPanel(null);
-  }, []);
+  // Handle post generation — set background image on canvas
+  const handlePostGenerated = useCallback(
+    (post: GeneratedPostData) => {
+      setGeneratedPost(post);
+      setShowGenerationResult(true);
 
-  // Handle dimension change
-  const handleDimensionChange = useCallback((dim: BannerDimension) => {
-    setSelectedDimension(dim);
-  }, []);
+      // If the generation produced a banner image, set it as background
+      if (post.banner?.dataUrl) {
+        setBackgroundImage(post.banner.dataUrl);
+      }
 
-  // Handle opening the Konva editor
-  const handleOpenEditor = useCallback(
-    (imageDataUrl?: string, width?: number, height?: number) => {
-      setEditorImage(imageDataUrl);
-      setEditorWidth(width || generatedPost?.banner?.width || 1080);
-      setEditorHeight(height || generatedPost?.banner?.height || 1080);
-      setEditorOpen(true);
+      // Update canvas size to match generated dimensions
+      if (post.banner?.width && post.banner?.height) {
+        setCanvasSize(post.banner.width, post.banner.height);
+      }
+
+      // Close the generate panel
+      setActiveSidebarPanel(null);
     },
-    [generatedPost],
+    [setBackgroundImage, setCanvasSize],
   );
 
-  // Handle saving from the Konva editor
-  const handleEditorSave = useCallback(
-    (exportedDataUrl: string) => {
-      if (generatedPost) {
-        setGeneratedPost({
-          ...generatedPost,
-          banner: {
-            ...generatedPost.banner,
-            dataUrl: exportedDataUrl,
-          },
-        });
-      }
-      setEditorOpen(false);
+  // Handle dimension change
+  const handleDimensionChange = useCallback(
+    (dim: BannerDimension) => {
+      setSelectedDimension(dim);
+      setCanvasSize(dim.width, dim.height);
     },
-    [generatedPost],
+    [setCanvasSize],
   );
 
   // Handle export
@@ -129,7 +115,7 @@ export function EditorLayout() {
     }
   }, [generatedPost]);
 
-  // Render the active panel content
+  // Panel content renderer
   const renderPanelContent = () => {
     switch (activeSidebarPanel) {
       case "generate":
@@ -150,13 +136,13 @@ export function EditorLayout() {
           />
         );
       case "elements":
-        return <ElementsPanel />;
+        return <ConnectedElementsPanel />;
       case "text":
-        return <TextPanel />;
+        return <ConnectedTextPanel />;
       case "media":
-        return <MediaPanel />;
+        return <ConnectedMediaPanel />;
       case "layers":
-        return <LayersPanel />;
+        return <ConnectedLayersPanel />;
       default:
         return null;
     }
@@ -189,53 +175,31 @@ export function EditorLayout() {
           </SidebarPanel>
         )}
 
-        {/* Central canvas area */}
-        <CanvasArea
-          generatedPost={generatedPost}
-          selectedDimension={selectedDimension}
-          zoom={canvasZoom}
-          onZoomChange={setCanvasZoom}
-          isGenerating={isGenerating}
-        />
+        {/* Central interactive canvas (Konva) */}
+        <InteractiveCanvas />
 
-        {/* Right properties panel */}
-        {showProperties && generatedPost && (
+        {/* Right panel: element properties when selected, or generation results */}
+        {selectedElement ? (
+          <InlinePropertiesPanel
+            onClose={() => {
+              /* keep panel visible while element selected */
+            }}
+          />
+        ) : showGenerationResult && generatedPost ? (
           <PropertiesPanel
             generatedPost={generatedPost}
-            onOpenEditor={handleOpenEditor}
-            onClose={() => setShowProperties(false)}
+            onClose={() => setShowGenerationResult(false)}
           />
-        )}
+        ) : null}
       </div>
-
-      {/* Konva Banner Editor Modal */}
-      {editorOpen && (
-        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center">
-          <div className="w-full h-full bg-white relative flex flex-col">
-            <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 bg-gray-50">
-              <h2 className="text-sm font-semibold text-gray-700">
-                Editor de Banner
-              </h2>
-              <button
-                onClick={() => setEditorOpen(false)}
-                className="p-1 hover:bg-gray-200 rounded transition-colors"
-                title="Cerrar editor"
-              >
-                <X size={20} />
-              </button>
-            </div>
-            <div className="flex-1 overflow-hidden">
-              <BannerEditor
-                initialImage={editorImage}
-                canvasWidth={editorWidth}
-                canvasHeight={editorHeight}
-                onExport={handleEditorSave}
-                onClose={() => setEditorOpen(false)}
-              />
-            </div>
-          </div>
-        </div>
-      )}
     </div>
+  );
+}
+
+export function EditorLayout() {
+  return (
+    <CanvasProvider>
+      <EditorContent />
+    </CanvasProvider>
   );
 }

@@ -189,10 +189,8 @@ export function GeneratePanel({
               <div className="flex items-center justify-center">
                 {getPlatformIconComponent(p)}
               </div>
-              <div className="text-[9px] font-medium capitalize text-gray-600 leading-none mt-0.5">
-                {p === "twitter"
-                  ? "X"
-                  : p.charAt(0).toUpperCase() + p.slice(1, 5)}
+              <div className="text-[9px] font-medium capitalize text-gray-600 leading-none mt-0.5 truncate w-full text-center px-0.5">
+                {p === "twitter" ? "X" : p}
               </div>
             </button>
           ))}
