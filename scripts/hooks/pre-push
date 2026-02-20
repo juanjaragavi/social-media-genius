@@ -1,0 +1,42 @@
+#!/bin/bash
+
+# pre-push hook to prevent accidental pushes to staging or main from dev branch
+
+remote="$1"
+url="$2"
+
+# Get the current branch name
+current_branch=$(git rev-parse --abbrev-ref HEAD)
+
+# We only want to enforce this if we are on the 'dev' branch
+if [ "$current_branch" != "dev" ]; then
+    exit 0
+fi
+
+# Read the refs being pushed from stdin
+# Format: <local ref> <local sha1> <remote ref> <remote sha1>
+while read local_ref local_sha remote_ref remote_sha
+do
+    # Extract the remote branch name
+    remote_branch=$(echo "$remote_ref" | sed 's/refs\/heads\///')
+    
+    if [ "$remote_branch" = "main" ] || [ "$remote_branch" = "staging" ]; then
+        echo "====================================================================="
+        echo "⚠️  WARNING: You are on the 'dev' branch and attempting to push to '$remote_branch'."
+        echo "Direct pushes from 'dev' to '$remote_branch' bypass the standard merge workflow."
+        echo "====================================================================="
+        
+        # Read from /dev/tty to get user input during a git hook
+        exec < /dev/tty
+        read -p "Are you sure you want to proceed with this push? (y/N): " response
+        
+        if [[ ! "$response" =~ ^[Yy]$ ]]; then
+            echo "❌ Push aborted."
+            exit 1
+        fi
+        
+        echo "✅ Push confirmed. Proceeding..."
+    fi
+done
+
+exit 0
