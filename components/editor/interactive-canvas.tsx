@@ -18,6 +18,8 @@ import {
   Star,
   Line,
   RegularPolygon,
+  Shape,
+  Group,
 } from "react-konva";
 import useImage from "use-image";
 import { ZoomIn, ZoomOut, Maximize2 } from "lucide-react";
@@ -33,7 +35,7 @@ import type {
   ImageElement,
   ShapeElement,
 } from "@/types/editor";
-import type Konva from "konva";
+import Konva from "konva";
 
 // ─── Canvas Image Component ─────────────────────────────
 
@@ -138,6 +140,54 @@ function CanvasTextElement({
     }
   }, [isSelected]);
 
+  const fontStyle =
+    `${element.fontWeight === "bold" ? "bold" : ""} ${element.fontStyle === "italic" ? "italic" : ""}`.trim() ||
+    "normal";
+
+  const calculatedFontSize = useMemo(() => {
+    if (element.resizeMode !== "auto-font-size") return element.fontSize;
+    if (typeof window === "undefined") return element.fontSize;
+
+    let low = 8;
+    let high = element.fontSize;
+    let result = 8;
+
+    // Use Konva.Text to measure height with word wrap
+    const tempText = new Konva.Text({
+      text: element.text,
+      width: element.width,
+      fontFamily: element.fontFamily,
+      fontStyle,
+      lineHeight: element.lineHeight,
+      letterSpacing: element.letterSpacing,
+      wrap: "word",
+    });
+
+    while (low <= high) {
+      const mid = Math.floor((low + high) / 2);
+      tempText.fontSize(mid);
+      if (tempText.height() <= element.height) {
+        result = mid;
+        low = mid + 1;
+      } else {
+        high = mid - 1;
+      }
+    }
+
+    tempText.destroy();
+    return result;
+  }, [
+    element.resizeMode,
+    element.fontSize,
+    element.text,
+    element.width,
+    element.height,
+    element.fontFamily,
+    fontStyle,
+    element.lineHeight,
+    element.letterSpacing,
+  ]);
+
   return (
     <>
       <Text
@@ -145,13 +195,13 @@ function CanvasTextElement({
         x={element.x}
         y={element.y}
         width={element.width}
-        text={element.text}
-        fontSize={element.fontSize}
-        fontFamily={element.fontFamily}
-        fontStyle={
-          `${element.fontWeight === "bold" ? "bold" : ""} ${element.fontStyle === "italic" ? "italic" : ""}`.trim() ||
-          "normal"
+        height={
+          element.resizeMode === "auto-height" ? undefined : element.height
         }
+        text={element.text}
+        fontSize={calculatedFontSize}
+        fontFamily={element.fontFamily}
+        fontStyle={fontStyle}
         textDecoration={
           element.textDecoration === "none" ? "" : element.textDecoration
         }
@@ -168,16 +218,49 @@ function CanvasTextElement({
         onDragEnd={(e) => {
           onChange({ x: e.target.x(), y: e.target.y() });
         }}
+        onTransform={() => {
+          const node = shapeRef.current;
+          if (!node) return;
+          const scaleX = node.scaleX();
+          const scaleY = node.scaleY();
+          node.scaleX(1);
+          node.scaleY(1);
+
+          const newWidth = Math.max(20, node.width() * scaleX);
+          const newHeight = Math.max(20, node.height() * scaleY);
+
+          node.width(newWidth);
+          if (element.resizeMode !== "auto-height") {
+            node.height(newHeight);
+          }
+
+          // Update state during transform for real-time reflow and font-size calculation
+          onChange({
+            x: node.x(),
+            y: node.y(),
+            width: newWidth,
+            height:
+              element.resizeMode === "auto-height" ? node.height() : newHeight,
+            rotation: node.rotation(),
+          });
+        }}
         onTransformEnd={() => {
           const node = shapeRef.current;
           if (!node) return;
           const scaleX = node.scaleX();
+          const scaleY = node.scaleY();
           node.scaleX(1);
           node.scaleY(1);
+
+          const newWidth = Math.max(20, node.width() * scaleX);
+          const newHeight = Math.max(20, node.height() * scaleY);
+
           onChange({
             x: node.x(),
             y: node.y(),
-            width: Math.max(20, node.width() * scaleX),
+            width: newWidth,
+            height:
+              element.resizeMode === "auto-height" ? node.height() : newHeight,
             rotation: node.rotation(),
           });
         }}
@@ -186,9 +269,23 @@ function CanvasTextElement({
         <Transformer
           ref={trRef}
           rotateEnabled
-          enabledAnchors={["middle-left", "middle-right"]}
+          enabledAnchors={
+            element.resizeMode === "auto-height"
+              ? ["middle-left", "middle-right"]
+              : [
+                  "top-left",
+                  "top-right",
+                  "bottom-left",
+                  "bottom-right",
+                  "middle-left",
+                  "middle-right",
+                  "top-center",
+                  "bottom-center",
+                ]
+          }
           boundBoxFunc={(_oldBox, newBox) => {
-            if (Math.abs(newBox.width) < 20) return _oldBox;
+            if (Math.abs(newBox.width) < 20 || Math.abs(newBox.height) < 20)
+              return _oldBox;
             return newBox;
           }}
         />
@@ -239,13 +336,34 @@ function CanvasShapeElement({
       const scaleY = node.scaleY();
       node.scaleX(1);
       node.scaleY(1);
-      onChange({
-        x: node.x(),
-        y: node.y(),
-        width: Math.max(20, node.width() * scaleX),
-        height: Math.max(20, node.height() * scaleY),
-        rotation: node.rotation(),
-      });
+
+      if (element.shapeType === "path" && element.pathPoints) {
+        const newPts = element.pathPoints.map((pt) => ({
+          ...pt,
+          x: pt.x * scaleX,
+          y: pt.y * scaleY,
+          cp1x: pt.cp1x !== undefined ? pt.cp1x * scaleX : undefined,
+          cp1y: pt.cp1y !== undefined ? pt.cp1y * scaleY : undefined,
+          cp2x: pt.cp2x !== undefined ? pt.cp2x * scaleX : undefined,
+          cp2y: pt.cp2y !== undefined ? pt.cp2y * scaleY : undefined,
+        }));
+        onChange({
+          x: node.x(),
+          y: node.y(),
+          width: Math.max(20, node.width() * scaleX),
+          height: Math.max(20, node.height() * scaleY),
+          rotation: node.rotation(),
+          pathPoints: newPts,
+        });
+      } else {
+        onChange({
+          x: node.x(),
+          y: node.y(),
+          width: Math.max(20, node.width() * scaleX),
+          height: Math.max(20, node.height() * scaleY),
+          rotation: node.rotation(),
+        });
+      }
     },
   };
 
@@ -316,6 +434,65 @@ function CanvasShapeElement({
             strokeWidth={element.strokeWidth || 4}
           />
         );
+      case "path":
+        return (
+          <Shape
+            ref={shapeRef as React.RefObject<Konva.Shape>}
+            {...commonProps}
+            fill={element.fill}
+            stroke={element.stroke}
+            strokeWidth={element.strokeWidth}
+            sceneFunc={(ctx, shape) => {
+              if (!element.pathPoints || element.pathPoints.length === 0)
+                return;
+              ctx.beginPath();
+              const pts = element.pathPoints;
+              ctx.moveTo(pts[0].x, pts[0].y);
+              for (let i = 1; i < pts.length; i++) {
+                const pt = pts[i];
+                if (
+                  pt.cp1x !== undefined &&
+                  pt.cp1y !== undefined &&
+                  pt.cp2x !== undefined &&
+                  pt.cp2y !== undefined
+                ) {
+                  ctx.bezierCurveTo(
+                    pt.cp1x,
+                    pt.cp1y,
+                    pt.cp2x,
+                    pt.cp2y,
+                    pt.x,
+                    pt.y,
+                  );
+                } else {
+                  ctx.lineTo(pt.x, pt.y);
+                }
+              }
+              if (element.closed) {
+                const pt = pts[0];
+                if (
+                  pt.cp1x !== undefined &&
+                  pt.cp1y !== undefined &&
+                  pt.cp2x !== undefined &&
+                  pt.cp2y !== undefined
+                ) {
+                  ctx.bezierCurveTo(
+                    pt.cp1x,
+                    pt.cp1y,
+                    pt.cp2x,
+                    pt.cp2y,
+                    pt.x,
+                    pt.y,
+                  );
+                } else {
+                  ctx.lineTo(pt.x, pt.y);
+                }
+                ctx.closePath();
+              }
+              ctx.fillStrokeShape(shape);
+            }}
+          />
+        );
       default:
         return null;
     }
@@ -324,7 +501,7 @@ function CanvasShapeElement({
   return (
     <>
       {renderShape()}
-      {isSelected && !element.locked && (
+      {isSelected && !element.locked && element.shapeType !== "path" && (
         <Transformer
           ref={trRef}
           rotateEnabled
@@ -341,6 +518,123 @@ function CanvasShapeElement({
           }}
         />
       )}
+      {isSelected &&
+        !element.locked &&
+        element.shapeType === "path" &&
+        element.pathPoints && (
+          <Group
+            x={element.x}
+            y={element.y}
+            rotation={element.rotation}
+            name="path-editor"
+          >
+            {element.pathPoints.map((pt, i) => {
+              const prevPt =
+                i === 0
+                  ? element.pathPoints![element.pathPoints!.length - 1]
+                  : element.pathPoints![i - 1];
+              return (
+                <React.Fragment key={i}>
+                  {/* Control point 1 (attached to previous point) */}
+                  {pt.cp1x !== undefined && pt.cp1y !== undefined && (
+                    <>
+                      <Line
+                        points={[prevPt.x, prevPt.y, pt.cp1x, pt.cp1y]}
+                        stroke="#3b82f6"
+                        strokeWidth={1}
+                        dash={[4, 4]}
+                      />
+                      <Circle
+                        x={pt.cp1x}
+                        y={pt.cp1y}
+                        radius={4}
+                        fill="#ffffff"
+                        stroke="#3b82f6"
+                        strokeWidth={1}
+                        draggable
+                        onDragMove={(e) => {
+                          const newPts = [...element.pathPoints!];
+                          newPts[i] = {
+                            ...newPts[i],
+                            cp1x: e.target.x(),
+                            cp1y: e.target.y(),
+                          };
+                          onChange({ pathPoints: newPts });
+                        }}
+                      />
+                    </>
+                  )}
+                  {/* Control point 2 (attached to current point) */}
+                  {pt.cp2x !== undefined && pt.cp2y !== undefined && (
+                    <>
+                      <Line
+                        points={[pt.x, pt.y, pt.cp2x, pt.cp2y]}
+                        stroke="#3b82f6"
+                        strokeWidth={1}
+                        dash={[4, 4]}
+                      />
+                      <Circle
+                        x={pt.cp2x}
+                        y={pt.cp2y}
+                        radius={4}
+                        fill="#ffffff"
+                        stroke="#3b82f6"
+                        strokeWidth={1}
+                        draggable
+                        onDragMove={(e) => {
+                          const newPts = [...element.pathPoints!];
+                          newPts[i] = {
+                            ...newPts[i],
+                            cp2x: e.target.x(),
+                            cp2y: e.target.y(),
+                          };
+                          onChange({ pathPoints: newPts });
+                        }}
+                      />
+                    </>
+                  )}
+                  {/* Anchor point */}
+                  <Circle
+                    x={pt.x}
+                    y={pt.y}
+                    radius={6}
+                    fill="#3b82f6"
+                    stroke="#ffffff"
+                    strokeWidth={2}
+                    draggable
+                    onDragMove={(e) => {
+                      const newPts = [...element.pathPoints!];
+                      const dx = e.target.x() - newPts[i].x;
+                      const dy = e.target.y() - newPts[i].y;
+                      newPts[i] = {
+                        ...newPts[i],
+                        x: e.target.x(),
+                        y: e.target.y(),
+                      };
+                      // Move control points with anchor
+                      if (newPts[i].cp2x !== undefined) {
+                        newPts[i].cp2x! += dx;
+                        newPts[i].cp2y! += dy;
+                      }
+
+                      // Also move cp1 of the NEXT point, since it's attached to this anchor
+                      const nextIdx = (i + 1) % newPts.length;
+                      if (newPts[nextIdx].cp1x !== undefined) {
+                        newPts[nextIdx] = {
+                          ...newPts[nextIdx],
+                          cp1x: newPts[nextIdx].cp1x! + dx,
+                          cp1y: newPts[nextIdx].cp1y! + dy,
+                        };
+                      }
+
+                      onChange({ pathPoints: newPts });
+                    }}
+                  />
+                </React.Fragment>
+              );
+            })}
+          </Group>
+        )}
     </>
   );
 }

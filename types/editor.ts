@@ -24,6 +24,8 @@ export interface EditorElement {
   zIndex: number;
 }
 
+export type TextResizeMode = "fixed" | "auto-height" | "auto-font-size";
+
 export interface TextElement extends EditorElement {
   type: "text";
   text: string;
@@ -36,6 +38,7 @@ export interface TextElement extends EditorElement {
   align: "left" | "center" | "right";
   lineHeight: number;
   letterSpacing: number;
+  resizeMode?: TextResizeMode;
 }
 
 export interface ImageElement extends EditorElement {
@@ -48,13 +51,24 @@ export interface ImageElement extends EditorElement {
   filters?: ImageFilter[];
 }
 
+export interface PathPoint {
+  x: number;
+  y: number;
+  cp1x?: number;
+  cp1y?: number;
+  cp2x?: number;
+  cp2y?: number;
+}
+
 export interface ShapeElement extends EditorElement {
   type: "shape";
-  shapeType: "rect" | "circle" | "triangle" | "star" | "line";
+  shapeType: "rect" | "circle" | "triangle" | "star" | "line" | "path";
   fill: string;
   stroke: string;
   strokeWidth: number;
   cornerRadius?: number;
+  pathPoints?: PathPoint[];
+  closed?: boolean;
 }
 
 export interface WatermarkElement extends EditorElement {

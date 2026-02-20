@@ -197,6 +197,37 @@ export function InlinePropertiesPanel({ onClose }: { onClose: () => void }) {
               className="text-xs"
             />
 
+            {/* Text Resize Mode */}
+            <div className="space-y-1 pt-2">
+              <Label className="text-xs text-gray-600">Ajuste de texto</Label>
+              <div className="flex bg-gray-100 p-1 rounded-md">
+                {(
+                  [
+                    { value: "fixed", label: "Fijo" },
+                    { value: "auto-height", label: "Auto Alto" },
+                    { value: "auto-font-size", label: "Ajustar" },
+                  ] as const
+                ).map((mode) => (
+                  <button
+                    key={mode.value}
+                    onClick={() =>
+                      updateElement(selectedElement.id, {
+                        resizeMode: mode.value,
+                      } as Partial<TextElement>)
+                    }
+                    className={`flex-1 text-[10px] py-1 px-2 rounded-sm transition-colors ${
+                      ((selectedElement as TextElement).resizeMode ||
+                        "auto-height") === mode.value
+                        ? "bg-white shadow-sm text-gray-900 font-medium"
+                        : "text-gray-500 hover:text-gray-700"
+                    }`}
+                  >
+                    {mode.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Font controls */}
             <div className="grid grid-cols-2 gap-2">
               <div>
@@ -422,6 +453,109 @@ export function InlinePropertiesPanel({ onClose }: { onClose: () => void }) {
                 className="h-7 text-xs"
               />
             </div>
+
+            {(selectedElement as ShapeElement).shapeType !== "path" && (
+              <div className="pt-2">
+                <button
+                  onClick={() => {
+                    const el = selectedElement as ShapeElement;
+                    let pathPoints: {
+                      x: number;
+                      y: number;
+                      cp1x?: number;
+                      cp1y?: number;
+                      cp2x?: number;
+                      cp2y?: number;
+                    }[] = [];
+                    const w = el.width;
+                    const h = el.height;
+
+                    if (el.shapeType === "rect") {
+                      pathPoints = [
+                        { x: 0, y: 0 },
+                        { x: w, y: 0 },
+                        { x: w, y: h },
+                        { x: 0, y: h },
+                      ];
+                    } else if (el.shapeType === "circle") {
+                      const rx = w / 2;
+                      const ry = h / 2;
+                      const kappa = 0.5522848;
+                      const ox = rx * kappa;
+                      const oy = ry * kappa;
+                      pathPoints = [
+                        {
+                          x: rx,
+                          y: 0,
+                          cp1x: 0,
+                          cp1y: ry - oy,
+                          cp2x: rx - ox,
+                          cp2y: 0,
+                        },
+                        {
+                          x: w,
+                          y: ry,
+                          cp1x: rx + ox,
+                          cp1y: 0,
+                          cp2x: w,
+                          cp2y: ry - oy,
+                        },
+                        {
+                          x: rx,
+                          y: h,
+                          cp1x: w,
+                          cp1y: ry + oy,
+                          cp2x: rx + ox,
+                          cp2y: h,
+                        },
+                        {
+                          x: 0,
+                          y: ry,
+                          cp1x: rx - ox,
+                          cp1y: h,
+                          cp2x: 0,
+                          cp2y: ry + oy,
+                        },
+                      ];
+                    } else if (el.shapeType === "triangle") {
+                      pathPoints = [
+                        { x: w / 2, y: 0 },
+                        { x: w, y: h },
+                        { x: 0, y: h },
+                      ];
+                    } else if (el.shapeType === "line") {
+                      pathPoints = [
+                        { x: 0, y: 0 },
+                        { x: w, y: 0 },
+                      ];
+                    } else if (el.shapeType === "star") {
+                      const cx = w / 2;
+                      const cy = h / 2;
+                      const outerRadius = Math.min(w, h) / 2;
+                      const innerRadius = outerRadius / 2;
+                      const numPoints = 5;
+                      for (let i = 0; i < numPoints * 2; i++) {
+                        const radius = i % 2 === 0 ? outerRadius : innerRadius;
+                        const angle = (i * Math.PI) / numPoints - Math.PI / 2;
+                        pathPoints.push({
+                          x: cx + radius * Math.cos(angle),
+                          y: cy + radius * Math.sin(angle),
+                        });
+                      }
+                    }
+
+                    updateElement(el.id, {
+                      shapeType: "path",
+                      pathPoints,
+                      closed: el.shapeType !== "line",
+                    } as Partial<ShapeElement>);
+                  }}
+                  className="w-full py-1.5 px-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-medium rounded transition-colors"
+                >
+                  Convertir a Trazado
+                </button>
+              </div>
+            )}
           </div>
         )}
 

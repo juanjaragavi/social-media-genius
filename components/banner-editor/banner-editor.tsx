@@ -75,6 +75,7 @@ function createTextElement(overrides?: Partial<TextElement>): TextElement {
     align: "center",
     lineHeight: 1.2,
     letterSpacing: 0,
+    resizeMode: "auto-height",
     ...overrides,
   };
 }

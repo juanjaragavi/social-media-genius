@@ -46,6 +46,7 @@ export function createTextElement(
     align: "center",
     lineHeight: 1.2,
     letterSpacing: 0,
+    resizeMode: "auto-height",
     ...overrides,
   };
 }
@@ -395,15 +396,18 @@ export function CanvasProvider({
     stage.scaleX(1);
     stage.scaleY(1);
 
-    // Hide all Transformer handles
+    // Hide all Transformer handles and path editors
     const transformers = stage.find("Transformer");
     transformers.forEach((t) => t.hide());
+    const pathEditors = stage.find(".path-editor");
+    pathEditors.forEach((p) => p.hide());
 
     // Export at native resolution
     const dataUrl = stage.toDataURL({ pixelRatio: 1, mimeType: "image/png" });
 
-    // Restore transformers
+    // Restore transformers and path editors
     transformers.forEach((t) => t.show());
+    pathEditors.forEach((p) => p.show());
 
     // Restore stage state
     stage.width(oldWidth);
