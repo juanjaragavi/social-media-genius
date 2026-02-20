@@ -27,6 +27,16 @@ Use `scripts/test-api.ts` for testing API routes (NOT test-setup.ts which is for
 
 The database schema is located at `lib/database/schema.sql`. PostgreSQL with uuid-ossp extension is required.
 
+## Branching Strategy & Environments
+
+This project follows a strict three-tier branch architecture to ensure code quality and deployment safety:
+
+- **`dev` (Development)**: The primary branch for all active development. All feature branches, bug fixes, and experimental code must be merged here first. This environment is used for initial testing and integration.
+- **`staging` (Pre-production)**: The release candidate branch. Code is merged from `dev` to `staging` for final QA, user acceptance testing (UAT), and performance validation in an environment that mirrors production.
+- **`main` (Production)**: The stable, production-ready branch. Only thoroughly tested code from `staging` is merged here. Direct commits or pushes to `main` are strictly prohibited.
+
+**Workflow:** `Feature Branch` → `dev` → `staging` → `main`
+
 ## Architecture
 
 ### Service Layer Pattern
