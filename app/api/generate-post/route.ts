@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getGoogleClient } from "@/lib/google-client";
 import { getPlatformSpec } from "@/lib/social-platform-specs";
 import { LOCALES, type OutputLocale } from "@/lib/i18n/translations";
+import { requireAuth } from "@/lib/auth-guard";
 import type { GeneratePostRequest } from "@/types/social-platforms";
 
 // System prompt for banner-focused social media content generation
@@ -152,6 +153,12 @@ You MUST respond with valid JSON in this exact format:
 };
 
 export async function POST(request: NextRequest) {
+  // ── Auth Gate ──────────────────────────────────────────────
+  const authResult = await requireAuth();
+  if (authResult instanceof NextResponse) return authResult;
+  const { user } = authResult;
+  // ──────────────────────────────────────────────────────────
+
   const startTime = Date.now();
 
   try {
@@ -208,7 +215,7 @@ Generate engaging, platform-optimized content with a PHOTOREALISTIC banner image
     );
 
     console.log(
-      `🤖 Generating ${body.platform} banner: ${body.postType} about "${body.topic}" [${outputLocale}]`,
+      `🤖 [${user.email}] Generating ${body.platform} banner: ${body.postType} about "${body.topic}" [${outputLocale}]`,
     );
 
     // Initialize Google client and generate content
@@ -323,6 +330,7 @@ Generate engaging, platform-optimized content with a PHOTOREALISTIC banner image
     const responseData = {
       platform: body.platform,
       outputLocale,
+      userId: user.id,
       post: {
         content: generatedPost.content || "",
         hashtags: generatedPost.hashtags || [],

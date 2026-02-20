@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SupabaseService } from "@/lib/services/supabase-service";
+import { requireAuth } from "@/lib/auth-guard";
 
 export async function POST(request: NextRequest) {
+  // ── Auth Gate ──────────────────────────────────────────
+  const authResult = await requireAuth();
+  if (authResult instanceof NextResponse) return authResult;
+  // ──────────────────────────────────────────────────────────
+
   try {
     const body = await request.json();
 
@@ -50,6 +56,11 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET() {
+  // ── Auth Gate ──────────────────────────────────────────
+  const authResult = await requireAuth();
+  if (authResult instanceof NextResponse) return authResult;
+  // ──────────────────────────────────────────────────────────
+
   try {
     const supabase = new SupabaseService();
     const banners = await supabase.listBanners();
@@ -67,6 +78,11 @@ export async function GET() {
 }
 
 export async function DELETE(request: NextRequest) {
+  // ── Auth Gate ──────────────────────────────────────────
+  const authResult = await requireAuth();
+  if (authResult instanceof NextResponse) return authResult;
+  // ──────────────────────────────────────────────────────────
+
   try {
     const body = await request.json();
 

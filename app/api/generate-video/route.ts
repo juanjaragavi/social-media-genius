@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { VeoService } from "@/lib/services/veo-service";
+import { requireAuth } from "@/lib/auth-guard";
 
 export async function POST(request: NextRequest) {
+  // ── Auth Gate ──────────────────────────────────────────
+  const authResult = await requireAuth();
+  if (authResult instanceof NextResponse) return authResult;
+  // ──────────────────────────────────────────────────────────
+
   const startTime = Date.now();
 
   try {

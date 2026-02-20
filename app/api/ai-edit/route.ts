@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getGoogleClient } from "@/lib/google-client";
+import { requireAuth } from "@/lib/auth-guard";
 
 /**
  * AI Image Editor API Route
@@ -9,6 +10,11 @@ import { getGoogleClient } from "@/lib/google-client";
  * a new version of the image based on the edit instructions.
  */
 export async function POST(request: NextRequest) {
+  // ── Auth Gate ──────────────────────────────────────────
+  const authResult = await requireAuth();
+  if (authResult instanceof NextResponse) return authResult;
+  // ──────────────────────────────────────────────────────────
+
   const startTime = Date.now();
 
   try {

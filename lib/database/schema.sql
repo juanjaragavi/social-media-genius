@@ -7,6 +7,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- Generated Posts Table
 CREATE TABLE generated_posts (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id TEXT REFERENCES "user"(id) ON DELETE SET NULL, -- Owner (Better Auth user)
     platform VARCHAR(20) NOT NULL CHECK (platform IN ('instagram', 'twitter', 'facebook', 'tiktok', 'linkedin')),
     post_type VARCHAR(30) NOT NULL,
     topic TEXT NOT NULL,
@@ -38,6 +39,7 @@ CREATE TABLE generated_posts (
 -- Generated Images Table
 CREATE TABLE generated_images (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id TEXT REFERENCES "user"(id) ON DELETE SET NULL, -- Owner (Better Auth user)
     post_id UUID REFERENCES generated_posts(id) ON DELETE CASCADE,
     platform VARCHAR(20) NOT NULL,
     prompt TEXT NOT NULL,
@@ -62,6 +64,7 @@ CREATE TABLE generated_images (
 -- Generated Videos Table
 CREATE TABLE generated_videos (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id TEXT REFERENCES "user"(id) ON DELETE SET NULL, -- Owner (Better Auth user)
     post_id UUID REFERENCES generated_posts(id) ON DELETE CASCADE,
     platform VARCHAR(20) NOT NULL,
     prompt TEXT NOT NULL,
@@ -104,6 +107,7 @@ CREATE TABLE user_sessions (
 -- Analytics Table (track usage patterns)
 CREATE TABLE usage_analytics (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id TEXT REFERENCES "user"(id) ON DELETE SET NULL, -- Owner (Better Auth user)
     event_type VARCHAR(50) NOT NULL, -- 'post_generated', 'image_generated', 'video_generated'
     platform VARCHAR(20),
     
@@ -127,10 +131,14 @@ CREATE TABLE usage_analytics (
 CREATE INDEX idx_posts_platform ON generated_posts(platform);
 CREATE INDEX idx_posts_created_at ON generated_posts(created_at DESC);
 CREATE INDEX idx_posts_post_type ON generated_posts(post_type);
+CREATE INDEX idx_posts_user_id ON generated_posts(user_id);
 CREATE INDEX idx_images_post_id ON generated_images(post_id);
+CREATE INDEX idx_images_user_id ON generated_images(user_id);
 CREATE INDEX idx_videos_post_id ON generated_videos(post_id);
+CREATE INDEX idx_videos_user_id ON generated_videos(user_id);
 CREATE INDEX idx_analytics_event_type ON usage_analytics(event_type);
 CREATE INDEX idx_analytics_created_at ON usage_analytics(created_at DESC);
+CREATE INDEX idx_analytics_user_id ON usage_analytics(user_id);
 
 -- Updated timestamp trigger function
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -155,6 +163,7 @@ SELECT
     p.platform,
     p.post_type,
     p.topic,
+    p.user_id,
     p.created_at,
     CASE 
         WHEN i.id IS NOT NULL THEN true 

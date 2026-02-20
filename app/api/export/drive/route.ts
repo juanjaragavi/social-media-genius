@@ -1,11 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleDriveService } from "@/lib/services/google-drive-service";
+import { requireAuth } from "@/lib/auth-guard";
 
 /**
  * POST /api/export/drive
  * Upload a composited banner PNG to Google Drive via service account.
  */
 export async function POST(request: NextRequest) {
+  // ── Auth Gate ──────────────────────────────────────────
+  const authResult = await requireAuth();
+  if (authResult instanceof NextResponse) return authResult;
+  // ──────────────────────────────────────────────────────────
+
   try {
     const body = await request.json();
 
