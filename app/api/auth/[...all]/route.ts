@@ -27,17 +27,47 @@ async function withLogging(
   handler: (req: NextRequest) => Promise<Response>,
   req: NextRequest,
 ): Promise<Response> {
+  const pathname = req.nextUrl.pathname;
+  const isCallback = pathname.includes("/callback/");
+
+  // Log callback requests with extra detail — this is where invalid_code fails
+  if (isCallback) {
+    const url = new URL(req.url);
+    console.log(
+      `[Auth] Callback received: ${pathname}`,
+      `| state=${url.searchParams.get("state")?.slice(0, 12)}...`,
+      `| code=${url.searchParams.has("code") ? "present" : "MISSING"}`,
+      `| error=${url.searchParams.get("error") || "none"}`,
+    );
+  }
+
   try {
     const res = await handler(req);
-    if (res.status >= 500) {
-      // Clone to read the body without consuming the original response stream
+
+    // Log any non-2xx response with body details
+    if (res.status >= 400) {
       const clone = res.clone();
       const body = await clone.text().catch(() => "(unreadable)");
       console.error(
-        `[Auth] ${req.method} ${req.nextUrl.pathname} → ${res.status}:`,
-        body.slice(0, 500),
+        `[Auth] ${req.method} ${pathname} → ${res.status}:`,
+        body.slice(0, 1000),
+      );
+
+      // For callbacks that redirect to errorCallbackURL, log the redirect target
+      const location = res.headers.get("location");
+      if (location) {
+        console.error(`[Auth] Redirect target: ${location}`);
+      }
+    }
+
+    // Also log redirect responses from callbacks (302s) — these carry the error
+    if (isCallback && (res.status === 302 || res.status === 307)) {
+      const location = res.headers.get("location");
+      console.log(
+        `[Auth] Callback redirect → ${res.status}: ${location?.slice(0, 200)}`,
       );
     }
+
     // Return the ORIGINAL response — headers, cookies, status intact
     return res;
   } catch (err: unknown) {

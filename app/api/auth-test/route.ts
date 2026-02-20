@@ -94,7 +94,39 @@ export async function GET(req: Request) {
        ORDER BY ordinal_position`,
     );
     results.sessionTableColumns = sessionCols.rows;
+    // Check recent verification records (OAuth state tokens)
+    const recentVerifications = await pool.query(
+      `SELECT "id", "identifier", LEFT("value", 80) as "valuePreview",
+              "expiresAt", "createdAt"
+       FROM "verification"
+       ORDER BY "createdAt" DESC NULLS LAST
+       LIMIT 5`,
+    );
+    results.recentVerifications = recentVerifications.rows;
 
+    // Check if any verification records exist at all
+    const verificationCount = await pool.query(
+      `SELECT COUNT(*) as total FROM "verification"`,
+    );
+    results.verificationCount = verificationCount.rows[0]?.total;
+
+    // Check recent sessions
+    const recentSessions = await pool.query(
+      `SELECT "id", "userId", "expiresAt", "createdAt"
+       FROM "session"
+       ORDER BY "createdAt" DESC
+       LIMIT 3`,
+    );
+    results.recentSessions = recentSessions.rows;
+
+    // Check users
+    const users = await pool.query(
+      `SELECT "id", "email", "name", "createdAt"
+       FROM "user"
+       ORDER BY "createdAt" DESC
+       LIMIT 5`,
+    );
+    results.users = users.rows;
     await pool.end();
   } catch (err: unknown) {
     results.schemaCheckError = err instanceof Error ? err.message : String(err);
