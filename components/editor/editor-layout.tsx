@@ -15,6 +15,7 @@ import { useAutosave } from "./use-autosave";
 import { SidebarPanel } from "./sidebar-panel";
 import { PropertiesPanel } from "./properties-panel";
 import { InlinePropertiesPanel } from "./inline-properties-panel";
+import { DriveFolderPicker } from "./drive-folder-picker";
 import { authClient } from "@/lib/auth-client";
 
 // Panels
@@ -34,6 +35,11 @@ export type ShareTarget =
   | "linkedin"
   | "whatsapp"
   | "email";
+
+// Drive export destination: default folder (null) or picker-selected folder ID
+export type DriveDestination = {
+  targetFolderId: string | null;
+};
 
 // Lazy-load the interactive canvas (Konva-based)
 const InteractiveCanvas = dynamic(
@@ -130,6 +136,10 @@ function EditorContent({ postId }: { postId?: string }) {
   const [isExporting, setIsExporting] = useState(false);
   const [exportMessage, setExportMessage] = useState<string | null>(null);
 
+  // Drive folder picker state
+  const [showDrivePicker, setShowDrivePicker] = useState(false);
+  const [driveAccessToken, setDriveAccessToken] = useState<string | null>(null);
+
   // Handle sidebar panel toggle
   const handleSelectPanel = useCallback((panel: SidebarPanelId) => {
     setActiveSidebarPanel((current) => (current === panel ? null : panel));
@@ -192,66 +202,108 @@ function EditorContent({ postId }: { postId?: string }) {
           document.body.removeChild(link);
           setExportMessage("Banner descargado correctamente.");
         } else if (destination === "drive") {
-          // Upload composited PNG blob to Google Drive via API
-          const blob = await exportCanvasBlob();
-          if (!blob) {
-            setExportMessage("Error: No se pudo exportar el canvas.");
-            return;
+          // Fetch user access token for the Picker API
+          try {
+            const tokenRes = await fetch("/api/export/drive/token");
+            const tokenData = await tokenRes.json();
+            if (tokenData.accessToken) {
+              setDriveAccessToken(tokenData.accessToken);
+            }
+          } catch {
+            // Token will be null — picker works without it (just no custom folder)
+            setDriveAccessToken(null);
           }
+          // Show the folder picker modal
+          setShowDrivePicker(true);
+          return; // Don't set isExporting to false yet
+        }
+      } catch (err) {
+        setExportMessage(
+          `Error: ${err instanceof Error ? err.message : "fallo inesperado"}`,
+        );
+      } finally {
+        if (destination !== "drive") {
+          setIsExporting(false);
+          // Auto-clear message after 4s
+          setTimeout(() => setExportMessage(null), 4000);
+        }
+      }
+    },
+    [exportCanvasDataUrl, generatedPost],
+  );
 
-          // Convert blob to base64
-          const reader = new FileReader();
-          const base64 = await new Promise<string>((resolve, reject) => {
-            reader.onload = () => {
-              const result = reader.result as string;
-              // Strip the data:...;base64, prefix
-              resolve(result.split(",")[1]);
-            };
-            reader.onerror = () => reject(new Error("Read failed"));
-            reader.readAsDataURL(blob);
-          });
+  // ─── Drive upload with folder selection ──────────────────
+  const handleDriveUpload = useCallback(
+    async (targetFolderId: string | null) => {
+      setShowDrivePicker(false);
+      setIsExporting(true);
+      setExportMessage(null);
 
-          const filename = `banner-${generatedPost?.platform || "post"}-${Date.now()}.png`;
+      try {
+        // Upload composited PNG blob to Google Drive via API
+        const blob = await exportCanvasBlob();
+        if (!blob) {
+          setExportMessage("Error: No se pudo exportar el canvas.");
+          return;
+        }
 
-          const res = await fetch("/api/export/drive", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ base64, filename, mimeType: "image/png" }),
-          });
+        // Convert blob to base64
+        const reader = new FileReader();
+        const base64 = await new Promise<string>((resolve, reject) => {
+          reader.onload = () => {
+            const result = reader.result as string;
+            // Strip the data:...;base64, prefix
+            resolve(result.split(",")[1]);
+          };
+          reader.onerror = () => reject(new Error("Read failed"));
+          reader.readAsDataURL(blob);
+        });
 
-          const data = await res.json();
-          if (data.success) {
+        const filename = `banner-${generatedPost?.platform || "post"}-${Date.now()}.png`;
+
+        const res = await fetch("/api/export/drive", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            base64,
+            filename,
+            mimeType: "image/png",
+            ...(targetFolderId ? { targetFolderId } : {}),
+          }),
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          setExportMessage(
+            data.webViewLink
+              ? `Guardado en Google Drive.`
+              : "Guardado en Google Drive correctamente.",
+          );
+          if (data.webViewLink) {
+            window.open(data.webViewLink, "_blank");
+          }
+        } else {
+          // Handle structured error codes from the API
+          if (data.code === "missing_scope") {
             setExportMessage(
-              data.webViewLink
-                ? `Guardado en Google Drive.`
-                : "Guardado en Google Drive correctamente.",
+              "Se necesitan permisos de Google Drive. Reconectando...",
             );
-            if (data.webViewLink) {
-              window.open(data.webViewLink, "_blank");
+            // Trigger incremental scope grant via Better Auth linkSocial
+            try {
+              await authClient.linkSocial({
+                provider: "google",
+                scopes: ["https://www.googleapis.com/auth/drive.file"],
+                callbackURL: window.location.href,
+              });
+            } catch {
+              setExportMessage(
+                "Error: Cierra sesión y vuelve a iniciar para conceder acceso a Drive.",
+              );
             }
           } else {
-            // Handle structured error codes from the API
-            if (data.code === "missing_scope") {
-              setExportMessage(
-                "Se necesitan permisos de Google Drive. Reconectando...",
-              );
-              // Trigger incremental scope grant via Better Auth linkSocial
-              try {
-                await authClient.linkSocial({
-                  provider: "google",
-                  scopes: ["https://www.googleapis.com/auth/drive.file"],
-                  callbackURL: window.location.href,
-                });
-              } catch {
-                setExportMessage(
-                  "Error: Cierra sesión y vuelve a iniciar para conceder acceso a Drive.",
-                );
-              }
-            } else {
-              setExportMessage(
-                `Error al subir a Drive: ${data.error || "desconocido"}`,
-              );
-            }
+            setExportMessage(
+              `Error al subir a Drive: ${data.error || "desconocido"}`,
+            );
           }
         }
       } catch (err) {
@@ -260,12 +312,16 @@ function EditorContent({ postId }: { postId?: string }) {
         );
       } finally {
         setIsExporting(false);
-        // Auto-clear message after 4s
         setTimeout(() => setExportMessage(null), 4000);
       }
     },
-    [exportCanvasDataUrl, exportCanvasBlob, generatedPost],
+    [exportCanvasBlob, generatedPost],
   );
+
+  const handleDrivePickerCancel = useCallback(() => {
+    setShowDrivePicker(false);
+    setIsExporting(false);
+  }, []);
 
   // ─── Share: upload to GCS then share URL ─────────────────
   const handleShare = useCallback(
@@ -386,6 +442,16 @@ function EditorContent({ postId }: { postId?: string }) {
 
   return (
     <div className="editor-viewport">
+      {/* Drive folder picker modal */}
+      {showDrivePicker && (
+        <DriveFolderPicker
+          accessToken={driveAccessToken}
+          onConfirm={handleDriveUpload}
+          onCancel={handleDrivePickerCancel}
+          isUploading={isExporting}
+        />
+      )}
+
       {/* Top toolbar */}
       <TopToolbar
         selectedDimension={selectedDimension}

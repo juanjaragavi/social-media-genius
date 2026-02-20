@@ -3,6 +3,10 @@ import { headers } from "next/headers";
 import { GoogleDriveService } from "@/lib/services/google-drive-service";
 import { requireAuth } from "@/lib/auth-guard";
 import { auth } from "@/lib/auth";
+import {
+  resolveOrCreateFolder,
+  DEFAULT_FOLDER_NAME,
+} from "@/lib/drive/resolve-folder";
 
 /**
  * POST /api/export/drive
@@ -17,9 +21,11 @@ import { auth } from "@/lib/auth";
  *      → Files go to a shared company folder (GOOGLE_DRIVE_FOLDER_ID).
  *
  * Request body (JSON):
- *   - base64:    string  — base64-encoded image data (no data-URI prefix)
- *   - filename:  string  — desired filename, e.g. "banner-instagram-1234.png"
- *   - mimeType?: string  — defaults to "image/png"
+ *   - base64:          string  — base64-encoded image data (no data-URI prefix)
+ *   - filename:        string  — desired filename, e.g. "banner-instagram-1234.png"
+ *   - mimeType?:       string  — defaults to "image/png"
+ *   - targetFolderId?: string  — user-selected Drive folder ID (from Picker).
+ *                                When absent, auto-resolves "Social Media Genius Banners" folder.
  *
  * Successful response (200):
  *   { success: true, fileId, webViewLink, webContentLink, method }
@@ -64,7 +70,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { base64, filename, mimeType = "image/png" } = body;
+    const { base64, filename, mimeType = "image/png", targetFolderId } = body;
 
     // Quick sanity check on payload size (base64 → ~1.33x raw)
     const estimatedSizeKB = (base64.length * 0.75) / 1024;
@@ -88,11 +94,37 @@ export async function POST(request: NextRequest) {
         console.log(
           "🔑 [/api/export/drive] User access token obtained; uploading with user token",
         );
+
+        // ── Resolve destination folder ─────────────────────
+        let folderId = targetFolderId;
+        if (!folderId) {
+          try {
+            folderId = await resolveOrCreateFolder(
+              tokenResponse.accessToken,
+              DEFAULT_FOLDER_NAME,
+            );
+            console.log(
+              `📁 [/api/export/drive] Resolved folder "${DEFAULT_FOLDER_NAME}" → ${folderId}`,
+            );
+          } catch (folderErr) {
+            console.warn(
+              "⚠️ [/api/export/drive] Folder resolution failed, uploading to root:",
+              folderErr instanceof Error ? folderErr.message : folderErr,
+            );
+            // folderId stays undefined → uploads to Drive root as final fallback
+          }
+        } else {
+          console.log(
+            `📁 [/api/export/drive] Using user-selected folder → ${folderId}`,
+          );
+        }
+
         result = await driveService.uploadWithUserToken(
           tokenResponse.accessToken,
           base64,
           filename,
           mimeType,
+          folderId,
         );
 
         if (result.success) {

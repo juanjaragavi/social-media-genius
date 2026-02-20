@@ -172,14 +172,15 @@ export class GoogleDriveService {
    * Upload a banner to the *user's* Google Drive using their OAuth
    * access token (obtained from Better Auth's account table).
    *
-   * Files go to the user's root Drive folder (or GOOGLE_DRIVE_FOLDER_ID
-   * if set, though that only works if the folder is accessible to the user).
+   * Files go to the specified folder (folderId), the auto-resolved
+   * "Social Media Genius Banners" folder, or the user's root Drive.
    */
   async uploadWithUserToken(
     userAccessToken: string,
     base64Data: string,
     filename: string,
     mimeType: string = "image/png",
+    folderId?: string,
   ): Promise<DriveUploadResult> {
     try {
       const buffer = Buffer.from(base64Data, "base64");
@@ -195,6 +196,7 @@ export class GoogleDriveService {
       const metadata: Record<string, unknown> = {
         name: filename,
         mimeType,
+        ...(folderId ? { parents: [folderId] } : {}),
       };
 
       console.log(
