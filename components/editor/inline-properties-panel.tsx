@@ -87,10 +87,11 @@ export function InlinePropertiesPanel({ onClose }: { onClose: () => void }) {
             <Label className="text-xs text-gray-600">X</Label>
             <Input
               type="number"
+              step="any"
               value={Math.round(selectedElement.x)}
               onChange={(e) =>
                 updateElement(selectedElement.id, {
-                  x: parseInt(e.target.value) || 0,
+                  x: parseFloat(e.target.value) || 0,
                 })
               }
               className="h-7 text-xs"
@@ -100,10 +101,11 @@ export function InlinePropertiesPanel({ onClose }: { onClose: () => void }) {
             <Label className="text-xs text-gray-600">Y</Label>
             <Input
               type="number"
+              step="any"
               value={Math.round(selectedElement.y)}
               onChange={(e) =>
                 updateElement(selectedElement.id, {
-                  y: parseInt(e.target.value) || 0,
+                  y: parseFloat(e.target.value) || 0,
                 })
               }
               className="h-7 text-xs"
@@ -113,10 +115,11 @@ export function InlinePropertiesPanel({ onClose }: { onClose: () => void }) {
             <Label className="text-xs text-gray-600">Ancho</Label>
             <Input
               type="number"
+              step="any"
               value={Math.round(selectedElement.width)}
               onChange={(e) =>
                 updateElement(selectedElement.id, {
-                  width: parseInt(e.target.value) || 100,
+                  width: parseFloat(e.target.value) || 100,
                 })
               }
               className="h-7 text-xs"
@@ -126,10 +129,11 @@ export function InlinePropertiesPanel({ onClose }: { onClose: () => void }) {
             <Label className="text-xs text-gray-600">Alto</Label>
             <Input
               type="number"
+              step="any"
               value={Math.round(selectedElement.height)}
               onChange={(e) =>
                 updateElement(selectedElement.id, {
-                  height: parseInt(e.target.value) || 100,
+                  height: parseFloat(e.target.value) || 100,
                 })
               }
               className="h-7 text-xs"
@@ -166,10 +170,11 @@ export function InlinePropertiesPanel({ onClose }: { onClose: () => void }) {
             </Label>
             <Input
               type="number"
+              step="any"
               value={Math.round(selectedElement.rotation)}
               onChange={(e) =>
                 updateElement(selectedElement.id, {
-                  rotation: parseInt(e.target.value) || 0,
+                  rotation: parseFloat(e.target.value) || 0,
                 })
               }
               className="h-7 text-xs"

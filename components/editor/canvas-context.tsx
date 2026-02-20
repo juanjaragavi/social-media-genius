@@ -1,6 +1,12 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useRef,
+} from "react";
 import { v4 as uuidv4 } from "uuid";
 import type {
   AnyEditorElement,
@@ -9,6 +15,7 @@ import type {
   ShapeElement,
   EditorState,
 } from "@/types/editor";
+import type Konva from "konva";
 
 // ─── Helper constructors ─────────────────────────────────
 
@@ -125,6 +132,10 @@ interface CanvasContextType {
   // Uploaded files
   uploadedFiles: UploadedFile[];
   addUploadedFile: (file: UploadedFile) => void;
+  // Stage ref for export
+  registerStageRef: (stage: Konva.Stage | null) => void;
+  exportCanvasDataUrl: () => string | null;
+  exportCanvasBlob: () => Promise<Blob | null>;
 }
 
 export interface UploadedFile {
@@ -353,6 +364,61 @@ export function CanvasProvider({
     setUploadedFiles((prev) => [...prev, file]);
   }, []);
 
+  // ─── Stage ref & export ──────────────────────────────────
+  const stageRefInternal = useRef<Konva.Stage | null>(null);
+
+  const registerStageRef = useCallback((stage: Konva.Stage | null) => {
+    stageRefInternal.current = stage;
+  }, []);
+
+  /**
+   * Export the Konva Stage at full canvas resolution, hiding selection
+   * handles (Transformers) and rendering at 1:1 pixel ratio.
+   */
+  const exportCanvasDataUrl = useCallback((): string | null => {
+    const stage = stageRefInternal.current;
+    if (!stage) return null;
+
+    // Save current stage state
+    const oldWidth = stage.width();
+    const oldHeight = stage.height();
+    const oldScaleX = stage.scaleX();
+    const oldScaleY = stage.scaleY();
+
+    // Set to full resolution (1:1)
+    stage.width(state.canvasWidth);
+    stage.height(state.canvasHeight);
+    stage.scaleX(1);
+    stage.scaleY(1);
+
+    // Hide all Transformer handles
+    const transformers = stage.find("Transformer");
+    transformers.forEach((t) => t.hide());
+
+    // Export at native resolution
+    const dataUrl = stage.toDataURL({ pixelRatio: 1, mimeType: "image/png" });
+
+    // Restore transformers
+    transformers.forEach((t) => t.show());
+
+    // Restore stage state
+    stage.width(oldWidth);
+    stage.height(oldHeight);
+    stage.scaleX(oldScaleX);
+    stage.scaleY(oldScaleY);
+    stage.batchDraw();
+
+    return dataUrl;
+  }, [state.canvasWidth, state.canvasHeight]);
+
+  const exportCanvasBlob = useCallback(async (): Promise<Blob | null> => {
+    const dataUrl = exportCanvasDataUrl();
+    if (!dataUrl) return null;
+
+    const res = await fetch(dataUrl);
+    return res.blob();
+  }, [exportCanvasDataUrl]);
+
   const selectedElement = state.elements.find(
     (el) => el.id === state.selectedElementId,
   );
@@ -378,6 +444,9 @@ export function CanvasProvider({
         selectedElement,
         uploadedFiles,
         addUploadedFile,
+        registerStageRef,
+        exportCanvasDataUrl,
+        exportCanvasBlob,
       }}
     >
       {children}

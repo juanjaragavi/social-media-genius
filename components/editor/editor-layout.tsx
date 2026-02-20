@@ -22,6 +22,16 @@ import { ConnectedTextPanel } from "./panels/connected-text-panel";
 import { ConnectedMediaPanel } from "./panels/connected-media-panel";
 import { ConnectedLayersPanel } from "./panels/connected-layers-panel";
 
+// Export destination type
+export type ExportDestination = "disk" | "drive";
+// Share target type
+export type ShareTarget =
+  | "facebook"
+  | "twitter"
+  | "linkedin"
+  | "whatsapp"
+  | "email";
+
 // Lazy-load the interactive canvas (Konva-based)
 const InteractiveCanvas = dynamic(
   () =>
@@ -42,8 +52,15 @@ const InteractiveCanvas = dynamic(
 );
 
 function EditorContent() {
-  const { setCanvasSize, setBackgroundImage, selectedElement, selectElement } =
-    useCanvasContext();
+  const {
+    state,
+    setCanvasSize,
+    setBackgroundImage,
+    selectedElement,
+    selectElement,
+    exportCanvasDataUrl,
+    exportCanvasBlob,
+  } = useCanvasContext();
 
   // Sidebar state
   const [activeSidebarPanel, setActiveSidebarPanel] =
@@ -62,6 +79,10 @@ function EditorContent() {
 
   // Properties panels
   const [showGenerationResult, setShowGenerationResult] = useState(false);
+
+  // Export/Share state
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportMessage, setExportMessage] = useState<string | null>(null);
 
   // Handle sidebar panel toggle
   const handleSelectPanel = useCallback((panel: SidebarPanelId) => {
@@ -103,17 +124,167 @@ function EditorContent() {
     [setCanvasSize],
   );
 
-  // Handle export
-  const handleExport = useCallback(() => {
-    if (generatedPost?.banner?.dataUrl) {
-      const link = document.createElement("a");
-      link.href = generatedPost.banner.dataUrl;
-      link.download = `banner-${generatedPost.platform || "post"}-${Date.now()}.png`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
-  }, [generatedPost]);
+  // ─── Export: flatten all layers to PNG ───────────────────
+  const handleExport = useCallback(
+    async (destination: ExportDestination = "disk") => {
+      setIsExporting(true);
+      setExportMessage(null);
+
+      try {
+        if (destination === "disk") {
+          // Use the Konva Stage export (flattens ALL layers)
+          const dataUrl = exportCanvasDataUrl();
+          if (!dataUrl) {
+            setExportMessage("Error: No se pudo exportar el canvas.");
+            return;
+          }
+          const link = document.createElement("a");
+          link.href = dataUrl;
+          link.download = `banner-${generatedPost?.platform || "post"}-${Date.now()}.png`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          setExportMessage("Banner descargado correctamente.");
+        } else if (destination === "drive") {
+          // Upload composited PNG blob to Google Drive via API
+          const blob = await exportCanvasBlob();
+          if (!blob) {
+            setExportMessage("Error: No se pudo exportar el canvas.");
+            return;
+          }
+
+          // Convert blob to base64
+          const reader = new FileReader();
+          const base64 = await new Promise<string>((resolve, reject) => {
+            reader.onload = () => {
+              const result = reader.result as string;
+              // Strip the data:...;base64, prefix
+              resolve(result.split(",")[1]);
+            };
+            reader.onerror = () => reject(new Error("Read failed"));
+            reader.readAsDataURL(blob);
+          });
+
+          const filename = `banner-${generatedPost?.platform || "post"}-${Date.now()}.png`;
+
+          const res = await fetch("/api/export/drive", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ base64, filename, mimeType: "image/png" }),
+          });
+
+          const data = await res.json();
+          if (data.success) {
+            setExportMessage(
+              data.webViewLink
+                ? `Guardado en Google Drive.`
+                : "Guardado en Google Drive correctamente.",
+            );
+            if (data.webViewLink) {
+              window.open(data.webViewLink, "_blank");
+            }
+          } else {
+            setExportMessage(
+              `Error al subir a Drive: ${data.error || "desconocido"}`,
+            );
+          }
+        }
+      } catch (err) {
+        setExportMessage(
+          `Error: ${err instanceof Error ? err.message : "fallo inesperado"}`,
+        );
+      } finally {
+        setIsExporting(false);
+        // Auto-clear message after 4s
+        setTimeout(() => setExportMessage(null), 4000);
+      }
+    },
+    [exportCanvasDataUrl, exportCanvasBlob, generatedPost],
+  );
+
+  // ─── Share: upload to GCS then share URL ─────────────────
+  const handleShare = useCallback(
+    async (target: ShareTarget) => {
+      setIsExporting(true);
+      setExportMessage(null);
+
+      try {
+        const blob = await exportCanvasBlob();
+        if (!blob) {
+          setExportMessage("Error: No se pudo exportar el canvas.");
+          return;
+        }
+
+        // Convert blob to base64
+        const reader = new FileReader();
+        const base64 = await new Promise<string>((resolve, reject) => {
+          reader.onload = () => {
+            const result = reader.result as string;
+            resolve(result.split(",")[1]);
+          };
+          reader.onerror = () => reject(new Error("Read failed"));
+          reader.readAsDataURL(blob);
+        });
+
+        const filename = `share-${generatedPost?.platform || "post"}-${Date.now()}.png`;
+
+        // Upload to public storage (GCS via existing upload route)
+        const uploadRes = await fetch("/api/upload", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            base64,
+            filename,
+            mimeType: "image/png",
+            platform: generatedPost?.platform,
+            width: state.canvasWidth,
+            height: state.canvasHeight,
+          }),
+        });
+
+        const uploadData = await uploadRes.json();
+        if (!uploadData.success || !uploadData.publicUrl) {
+          setExportMessage("Error subiendo imagen para compartir.");
+          return;
+        }
+
+        const url = encodeURIComponent(uploadData.publicUrl);
+        const shareText = encodeURIComponent(
+          generatedPost?.post?.content
+            ? generatedPost.post.content.substring(0, 200)
+            : "Mira este banner creado con Social Media Genius!",
+        );
+
+        const shareUrls: Record<ShareTarget, string> = {
+          facebook: `https://www.facebook.com/sharer/sharer.php?u=${url}`,
+          twitter: `https://twitter.com/intent/tweet?url=${url}&text=${shareText}`,
+          linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${url}`,
+          whatsapp: `https://api.whatsapp.com/send?text=${shareText}%20${url}`,
+          email: `mailto:?subject=${encodeURIComponent("Banner - Social Media Genius")}&body=${shareText}%0A%0A${url}`,
+        };
+
+        if (target === "email") {
+          window.location.href = shareUrls.email;
+        } else {
+          window.open(shareUrls[target], "_blank", "noopener,noreferrer");
+        }
+
+        setExportMessage("Enlace de compartir abierto.");
+      } catch (err) {
+        setExportMessage(
+          `Error: ${err instanceof Error ? err.message : "fallo inesperado"}`,
+        );
+      } finally {
+        setIsExporting(false);
+        setTimeout(() => setExportMessage(null), 4000);
+      }
+    },
+    [exportCanvasBlob, generatedPost, state.canvasWidth, state.canvasHeight],
+  );
+
+  // Check if canvas has content (either generated or user-added elements)
+  const hasCanvasContent =
+    !!generatedPost?.banner?.dataUrl || state.elements.length > 0;
 
   // Panel content renderer
   const renderPanelContent = () => {
@@ -153,8 +324,11 @@ function EditorContent() {
       {/* Top toolbar */}
       <TopToolbar
         selectedDimension={selectedDimension}
-        hasGeneratedContent={!!generatedPost?.banner?.dataUrl}
+        hasGeneratedContent={hasCanvasContent}
         onExport={handleExport}
+        onShare={handleShare}
+        isExporting={isExporting}
+        exportMessage={exportMessage}
       />
 
       {/* Main workspace area */}

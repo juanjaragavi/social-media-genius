@@ -349,7 +349,14 @@ function CanvasShapeElement({
 
 export function InteractiveCanvas() {
   const ctx = useCanvasContext();
-  const { state, updateElement, selectElement, deleteElement, setZoom } = ctx;
+  const {
+    state,
+    updateElement,
+    selectElement,
+    deleteElement,
+    setZoom,
+    registerStageRef,
+  } = ctx;
 
   const stageRef = useRef<Konva.Stage>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -357,6 +364,13 @@ export function InteractiveCanvas() {
   useEffect(() => {
     canvasCtxRef.current = ctx;
   });
+
+  // Register stage ref with context for export
+  useEffect(() => {
+    registerStageRef(stageRef.current);
+    return () => registerStageRef(null);
+  }, [registerStageRef]);
+
   const [containerSize, setContainerSize] = useState({ w: 600, h: 600 });
 
   // Measure container
@@ -456,6 +470,8 @@ export function InteractiveCanvas() {
             elementType: string;
             shapeType?: string;
             preset?: string;
+            emoji?: string;
+            name?: string;
           };
           const { x, y } = getCanvasCoords();
           const { addElement } = canvasCtxRef.current;
@@ -469,6 +485,27 @@ export function InteractiveCanvas() {
                   y: Math.max(0, y - 100),
                 },
               ),
+            );
+          } else if (
+            data.elementType === "text" &&
+            data.preset === "emoji" &&
+            data.emoji
+          ) {
+            // Emoji drop — large emoji text element
+            addElement(
+              createTextElementFn({
+                text: data.emoji,
+                fontSize: 64,
+                fontWeight: "normal",
+                fontFamily:
+                  "Noto Color Emoji, Apple Color Emoji, Segoe UI Emoji, sans-serif",
+                name: data.name || "Emoji",
+                width: 80,
+                height: 80,
+                align: "center",
+                x: Math.max(0, x - 40),
+                y: Math.max(0, y - 40),
+              }),
             );
           } else if (data.elementType === "text") {
             const presets: Record<
@@ -517,7 +554,10 @@ export function InteractiveCanvas() {
       // 2. Handle data URL drops (images from media panel)
       const dataUrl = e.dataTransfer.getData("text/plain");
       const name = e.dataTransfer.getData("text/name") || "Imagen";
-      if (dataUrl && dataUrl.startsWith("data:")) {
+      if (
+        dataUrl &&
+        (dataUrl.startsWith("data:") || dataUrl.startsWith("http"))
+      ) {
         const { x, y } = getCanvasCoords();
         const { addElement } = canvasCtxRef.current;
         addElement(

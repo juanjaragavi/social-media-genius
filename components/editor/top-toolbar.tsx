@@ -1,25 +1,71 @@
 "use client";
 
-import React from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import { useSession, signOut } from "@/lib/auth-client";
-import { useState } from "react";
-import { Share2, Sparkles, LogOut, Download, Undo2, Redo2 } from "lucide-react";
+import {
+  Share2,
+  Sparkles,
+  LogOut,
+  Download,
+  Undo2,
+  Redo2,
+  ChevronDown,
+  HardDrive,
+  CloudUpload,
+  Loader2,
+  Facebook,
+  Twitter,
+  Linkedin,
+  MessageCircle,
+  Mail,
+} from "lucide-react";
 import type { BannerDimension } from "@/types/editor";
+import type { ExportDestination, ShareTarget } from "./editor-layout";
 
 interface TopToolbarProps {
   selectedDimension: BannerDimension;
   hasGeneratedContent: boolean;
-  onExport?: () => void;
+  onExport?: (destination: ExportDestination) => void;
+  onShare?: (target: ShareTarget) => void;
+  isExporting?: boolean;
+  exportMessage?: string | null;
 }
 
 export function TopToolbar({
   selectedDimension,
   hasGeneratedContent,
   onExport,
+  onShare,
+  isExporting,
+  exportMessage,
 }: TopToolbarProps) {
   const { data: session } = useSession();
   const [signingOut, setSigningOut] = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const [showShareMenu, setShowShareMenu] = useState(false);
+  const exportMenuRef = useRef<HTMLDivElement>(null);
+  const shareMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close menus on outside click
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (
+        exportMenuRef.current &&
+        !exportMenuRef.current.contains(e.target as Node)
+      ) {
+        setShowExportMenu(false);
+      }
+      if (
+        shareMenuRef.current &&
+        !shareMenuRef.current.contains(e.target as Node)
+      ) {
+        setShowShareMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
 
   const handleSignOut = async () => {
     setSigningOut(true);
@@ -83,14 +129,140 @@ export function TopToolbar({
           🤖 Gemini 2.5
         </span>
 
+        {/* Export message toast */}
+        {exportMessage && (
+          <span className="text-xs px-2 py-1 bg-blue-50 border border-blue-200 text-blue-700 rounded font-medium animate-pulse max-w-48 truncate">
+            {exportMessage}
+          </span>
+        )}
+
+        {/* Share button */}
+        {hasGeneratedContent && onShare && (
+          <div className="relative" ref={shareMenuRef}>
+            <button
+              onClick={() => {
+                setShowShareMenu(!showShareMenu);
+                setShowExportMenu(false);
+              }}
+              disabled={isExporting}
+              className="flex items-center gap-1 px-2.5 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-all border border-gray-200 cursor-pointer disabled:opacity-50"
+            >
+              <Share2 className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Compartir</span>
+            </button>
+
+            {showShareMenu && (
+              <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50 py-1">
+                <button
+                  onClick={() => {
+                    onShare("facebook");
+                    setShowShareMenu(false);
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+                >
+                  <Facebook className="h-3.5 w-3.5 text-blue-600" />
+                  Facebook
+                </button>
+                <button
+                  onClick={() => {
+                    onShare("twitter");
+                    setShowShareMenu(false);
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+                >
+                  <Twitter className="h-3.5 w-3.5 text-sky-500" />X (Twitter)
+                </button>
+                <button
+                  onClick={() => {
+                    onShare("linkedin");
+                    setShowShareMenu(false);
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+                >
+                  <Linkedin className="h-3.5 w-3.5 text-blue-700" />
+                  LinkedIn
+                </button>
+                <button
+                  onClick={() => {
+                    onShare("whatsapp");
+                    setShowShareMenu(false);
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+                >
+                  <MessageCircle className="h-3.5 w-3.5 text-green-600" />
+                  WhatsApp
+                </button>
+                <div className="h-px bg-gray-100 my-1" />
+                <button
+                  onClick={() => {
+                    onShare("email");
+                    setShowShareMenu(false);
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+                >
+                  <Mail className="h-3.5 w-3.5 text-gray-500" />
+                  Email
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Export button with dropdown */}
         {hasGeneratedContent && onExport && (
-          <button
-            onClick={onExport}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-linear-to-r from-blue-600 to-cyan-600 rounded-lg hover:from-blue-700 hover:to-cyan-700 transition-all shadow-sm"
-          >
-            <Download className="h-4 w-4" />
-            <span className="hidden sm:inline">Exportar</span>
-          </button>
+          <div className="relative" ref={exportMenuRef}>
+            <div className="flex items-center">
+              <button
+                onClick={() => onExport("disk")}
+                disabled={isExporting}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-linear-to-r from-blue-600 to-cyan-600 rounded-l-lg hover:from-blue-700 hover:to-cyan-700 transition-all shadow-sm disabled:opacity-50 cursor-pointer"
+              >
+                {isExporting ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4" />
+                )}
+                <span className="hidden sm:inline">Exportar</span>
+              </button>
+              <button
+                onClick={() => {
+                  setShowExportMenu(!showExportMenu);
+                  setShowShareMenu(false);
+                }}
+                disabled={isExporting}
+                className="flex items-center px-1.5 py-1.5 text-white bg-linear-to-r from-cyan-600 to-cyan-700 rounded-r-lg hover:from-cyan-700 hover:to-cyan-800 transition-all shadow-sm border-l border-cyan-500 disabled:opacity-50 cursor-pointer"
+              >
+                <ChevronDown className="h-4 w-4" />
+              </button>
+            </div>
+
+            {showExportMenu && (
+              <div className="absolute right-0 top-full mt-1 w-52 bg-white border border-gray-200 rounded-lg shadow-lg z-50 py-1">
+                <button
+                  onClick={() => {
+                    onExport("disk");
+                    setShowExportMenu(false);
+                  }}
+                  disabled={isExporting}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 cursor-pointer"
+                >
+                  <HardDrive className="h-3.5 w-3.5 text-gray-500" />
+                  Guardar en disco
+                </button>
+                <button
+                  onClick={() => {
+                    onExport("drive");
+                    setShowExportMenu(false);
+                  }}
+                  disabled={isExporting}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 cursor-pointer"
+                >
+                  <CloudUpload className="h-3.5 w-3.5 text-blue-500" />
+                  Guardar en Google Drive
+                </button>
+              </div>
+            )}
+          </div>
         )}
 
         {session?.user && (
