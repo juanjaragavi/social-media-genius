@@ -68,7 +68,7 @@ export function ProjectCard({
       {/* Folder icon area */}
       <button
         onClick={() => onClick(id)}
-        className="flex items-center justify-center py-8 bg-gradient-to-br from-blue-50 to-cyan-50 cursor-pointer"
+        className="flex items-center justify-center py-8 bg-linear-to-br from-blue-50 to-cyan-50 cursor-pointer"
       >
         <Folder className="h-12 w-12 text-blue-400 fill-blue-100" />
       </button>
