@@ -48,7 +48,15 @@ export function DriveFolderPicker({
   });
 
   return (
-    <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+    <div
+      className="fixed inset-0 z-100 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+      onClick={(e) => {
+        // Close on backdrop click (only when not uploading)
+        if (e.target === e.currentTarget && !isUploading) {
+          onCancel();
+        }
+      }}
+    >
       <div className="bg-white rounded-xl shadow-2xl border border-gray-200 w-full max-w-md mx-4 overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
@@ -60,8 +68,7 @@ export function DriveFolderPicker({
           </div>
           <button
             onClick={onCancel}
-            disabled={isUploading}
-            className="p-1 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50 cursor-pointer"
+            className="p-1 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
           >
             <X className="h-4 w-4" />
           </button>
@@ -157,8 +164,7 @@ export function DriveFolderPicker({
         <div className="px-5 py-3 border-t border-gray-100 bg-gray-50/50 flex justify-end">
           <button
             onClick={onCancel}
-            disabled={isUploading}
-            className="text-xs px-3 py-1.5 rounded-lg text-gray-600 hover:bg-gray-200 transition-colors disabled:opacity-50 cursor-pointer"
+            className="text-xs px-3 py-1.5 rounded-lg text-gray-600 hover:bg-gray-200 transition-colors cursor-pointer"
           >
             Cancelar
           </button>

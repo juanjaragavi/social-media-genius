@@ -202,12 +202,17 @@ function EditorContent({ postId }: { postId?: string }) {
           document.body.removeChild(link);
           setExportMessage("Banner descargado correctamente.");
         } else if (destination === "drive") {
+          // Reset exporting state before showing picker — no upload is active yet
+          setIsExporting(false);
+
           // Fetch user access token for the Picker API
           try {
             const tokenRes = await fetch("/api/export/drive/token");
             const tokenData = await tokenRes.json();
             if (tokenData.accessToken) {
               setDriveAccessToken(tokenData.accessToken);
+            } else {
+              setDriveAccessToken(null);
             }
           } catch {
             // Token will be null — picker works without it (just no custom folder)
@@ -215,7 +220,7 @@ function EditorContent({ postId }: { postId?: string }) {
           }
           // Show the folder picker modal
           setShowDrivePicker(true);
-          return; // Don't set isExporting to false yet
+          return;
         }
       } catch (err) {
         setExportMessage(
