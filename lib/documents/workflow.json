@@ -1,0 +1,219 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "path": "new-brand-launch",
+        "options": {
+          "authentication": "basicAuth",
+          "httpMethod": "POST",
+          "responseMode": "lastNode"
+        }
+      },
+      "name": "01. Lanzamiento de Marca (Webhook)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "id": "1d856d3e-25b8-4c13-a442-f28a6f3b0e2b",
+      "next": [
+        "2d856d3e-25b8-4c13-a442-f28a6f3b0e2c"
+      ],
+      "position": [
+        240,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "options": {},
+        "values": [
+          {
+            "name": "ProjectName",
+            "value": "NuevoProducto",
+            "alwaysSet": true
+          },
+          {
+            "name": "Market",
+            "value": "LATAM",
+            "alwaysSet": true
+          },
+          {
+            "name": "Vertical",
+            "value": "Viajes",
+            "alwaysSet": false
+          }
+        ]
+      },
+      "name": "02. Set Variables Iniciales (MCP)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "id": "2d856d3e-25b8-4c13-a442-f28a6f3b0e2c",
+      "next": [
+        "3d856d3e-25b8-4c13-a442-f28a6f3b0e2d"
+      ],
+      "position": [
+        480,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.Vertical}}",
+              "operation": "isNotEmpty"
+            }
+          ]
+        }
+      },
+      "name": "03. If: Vertical Definida (Validación)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "id": "3d856d3e-25b8-4c13-a442-f28a6f3b0e2d",
+      "next": {
+        "main": [
+          [
+            "4d856d3e-25b8-4c13-a442-f28a6f3b0e2e"
+          ]
+        ],
+        "false": [
+          [
+            "5d856d3e-25b8-4c13-a442-f28a6f3b0e2f"
+          ]
+        ]
+      },
+      "position": [
+        720,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": "Agente_Estrategico_ID_Dummy",
+        "mode": "subWorkflow",
+        "options": {}
+      },
+      "name": "04. Execute Workflow: Agente Estratégico",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1,
+      "id": "4d856d3e-25b8-4c13-a442-f28a6f3b0e2e",
+      "position": [
+        1200,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": "Agente_Investigacion_ID_Dummy",
+        "mode": "subWorkflow",
+        "options": {}
+      },
+      "name": "05. Execute Workflow: Agente de Investigación",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1,
+      "id": "5d856d3e-25b8-4c13-a442-f28a6f3b0e2f",
+      "next": [
+        "6d856d3e-25b8-4c13-a442-f28a6f3b0e30"
+      ],
+      "position": [
+        960,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "options": {},
+        "values": [
+          {
+            "name": "Vertical",
+            "value": "Estilo de Vida Saludable y Fitness",
+            "alwaysSet": true
+          }
+        ]
+      },
+      "name": "06. Set New Vertical (Enriquecimiento JSON)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "id": "6d856d3e-25b8-4c13-a442-f28a6f3b0e30",
+      "next": [
+        "4d856d3e-25b8-4c13-a442-f28a6f3b0e2e"
+      ],
+      "position": [
+        1200,
+        240
+      ]
+    }
+  ],
+  "connections": {
+    "1d856d3e-25b8-4c13-a442-f28a6f3b0e2b": {
+      "main": [
+        [
+          {
+            "node": "2d856d3e-25b8-4c13-a442-f28a6f3b0e2c",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2d856d3e-25b8-4c13-a442-f28a6f3b0e2c": {
+      "main": [
+        [
+          {
+            "node": "3d856d3e-25b8-4c13-a442-f28a6f3b0e2d",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "3d856d3e-25b8-4c13-a442-f28a6f3b0e2d": {
+      "main": [
+        [
+          {
+            "node": "4d856d3e-25b8-4c13-a442-f28a6f3b0e2e",
+            "index": 0
+          }
+        ]
+      ],
+      "false": [
+        [
+          {
+            "node": "5d856d3e-25b8-4c13-a442-f28a6f3b0e2f",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "5d856d3e-25b8-4c13-a442-f28a6f3b0e2f": {
+      "main": [
+        [
+          {
+            "node": "6d856d3e-25b8-4c13-a442-f28a6f3b0e30",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "6d856d3e-25b8-4c13-a442-f28a6f3b0e30": {
+      "main": [
+        [
+          {
+            "node": "4d856d3e-25b8-4c13-a442-f28a6f3b0e2e",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "workflow": {
+      "name": "MCP Server - Orquestación de Marca Digital (Dummy)",
+      "description": "Flujo principal de n8n para orquestar los Agentes (Sub-Workflows) del Agentic Framework de TopNetworks Inc. Inicia la secuencia Estrategia → Investigación.",
+      "tags": []
+    }
+  },
+  "staticData": null,
+  "meta": {
+    "instanceId": "e2863920-562a-4467-9c86-89689e419b44",
+    "instanceVersion": "1.0"
+  }
+}
